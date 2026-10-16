@@ -15,6 +15,7 @@ use serde_json::Value;
 
 use super::api::{ApiError, DiscordApi, Endpoint, WriteRequest};
 use super::wire::{Snapshot, WireChannel, WireRole};
+use crate::model::FLAG_REQUIRE_TAG;
 use crate::snowflake::Sf;
 
 pub struct MemoryApi {
@@ -76,9 +77,8 @@ impl MemoryApi {
                     .find(|r| r.id.0 == guild_id)
                     .map(|r| r.permissions.clone())
                     .unwrap_or_else(|| "0".to_owned());
-                for r in s.roles.iter_mut().filter(|r| r.id.0 != guild_id) {
-                    r.position += 1;
-                }
+                // Like Discord, the new role lands at position 1 *without*
+                // shifting the others, so it ties with the lowest role.
                 let mut role = WireRole {
                     id: Sf(self.id()),
                     permissions: everyone,
@@ -99,10 +99,47 @@ impl MemoryApi {
                 Ok(to_value(role))
             }
             Endpoint::RolePositions => {
+                // Discord moves each role to its position, shifting the
+                // others, then numbers every role 1..n from the bottom. A bot
+                // can't touch positions at or above its own highest role.
+                let bot_top = s.bot.as_ref().and_then(|b| {
+                    s.roles
+                        .iter()
+                        .filter(|r| b.member.roles.contains(&r.id))
+                        .map(|r| r.position)
+                        .max()
+                });
+                let mut order: Vec<WireRole> = s
+                    .roles
+                    .iter()
+                    .filter(|r| r.id.0 != guild_id)
+                    .cloned()
+                    .collect();
+                // Bottom first; ties put the newer (larger) ID lower.
+                order.sort_by_key(|r| (r.position, std::cmp::Reverse(r.id.0)));
                 for item in body.as_array().into_iter().flatten() {
                     let (id, pos) = id_position(item);
-                    if let Some(r) = s.roles.iter_mut().find(|r| r.id.0 == id) {
-                        r.position = pos;
+                    let Some(i) = order.iter().position(|r| r.id.0 == id) else {
+                        continue;
+                    };
+                    if bot_top.is_some_and(|top| pos >= top || order[i].position >= top) {
+                        return Err(ApiError::Status {
+                            status: 403,
+                            method: "PATCH",
+                            path: format!("guilds/{guild_id}/roles"),
+                            message: "Missing Permissions".to_owned(),
+                        });
+                    }
+                    let r = order.remove(i);
+                    let at = usize::try_from(pos - 1).unwrap_or(0).min(order.len());
+                    order.insert(at, r);
+                }
+                for (i, r) in order.iter_mut().enumerate() {
+                    r.position = i as i64 + 1;
+                }
+                for r in s.roles.iter_mut() {
+                    if let Some(o) = order.iter().find(|o| o.id == r.id) {
+                        r.position = o.position;
                     }
                 }
                 Ok(Value::Array(s.roles.iter().map(to_value).collect()))
@@ -145,6 +182,18 @@ impl MemoryApi {
                     .ok_or_else(|| not_found("channel", id))?;
                 let mut c: WireChannel = merge(&s.channels[i], &body);
                 self.tag_ids(&mut c);
+                // Discord: a forum can only require tags it has.
+                let requires = c.flags.unwrap_or(0) & FLAG_REQUIRE_TAG != 0;
+                let open_tags = c.available_tags.iter().flatten().any(|t| !t.moderated);
+                if requires && !open_tags {
+                    return Err(ApiError::Status {
+                        status: 400,
+                        method: "PATCH",
+                        path: format!("channels/{id}"),
+                        message: "There are no tags available that can be set by non-moderators"
+                            .to_owned(),
+                    });
+                }
                 s.channels[i] = c.clone();
                 Ok(to_value(&c))
             }
@@ -204,7 +253,12 @@ fn merge<T: Serialize + DeserializeOwned>(base: &T, body: &Value) -> T {
     let mut v = to_value(base);
     if let (Some(obj), Some(patch)) = (v.as_object_mut(), body.as_object()) {
         for (k, val) in patch {
-            obj.insert(k.clone(), val.clone());
+            let val = match (k.as_str(), val) {
+                // Discord trims topics.
+                ("topic", Value::String(s)) => Value::String(s.trim().to_owned()),
+                _ => val.clone(),
+            };
+            obj.insert(k.clone(), val);
         }
     }
     serde_json::from_value(v).expect("patched object still matches the wire type")

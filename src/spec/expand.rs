@@ -468,7 +468,9 @@ impl Cx<'_> {
             (None, Some(t)) => ("topic", Some(t)),
             _ => ("topic", None),
         };
-        let topic = topic.map(|t| self.subst(t, scope, topic_field));
+        // Discord trims topics, and YAML `|` blocks end in a newline; without
+        // this every plan would try to set them again.
+        let topic = topic.map(|t| self.subst(t, scope, topic_field).trim().to_owned());
         if let Some(t) = &topic {
             let max = if kind == Forum {
                 limits::GUIDELINES

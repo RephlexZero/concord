@@ -160,3 +160,55 @@ fn a_second_apply_after_an_interrupted_one_finishes_the_job() {
     let (_, lock) = apply(&api, &partial, false);
     assert_converged(&api, &lock, false);
 }
+
+#[test]
+fn requiring_tags_waits_until_the_forum_has_some() {
+    // Discord rejects require_tag on a forum with no tags, so the flag must
+    // follow the tag update even though plans list updates first.
+    use concord::live::wire::{WireChannel, WireGuild, WireRole};
+    use concord::snowflake::Sf;
+    let snap = Snapshot {
+        guild: WireGuild {
+            id: Sf(1),
+            name: "t".into(),
+            ..Default::default()
+        },
+        roles: vec![WireRole {
+            id: Sf(1),
+            name: "@everyone".into(),
+            permissions: "0".into(),
+            ..Default::default()
+        }],
+        channels: vec![WireChannel {
+            id: Sf(5),
+            kind: 15,
+            name: Some("wiki".into()),
+            position: Some(0),
+            ..Default::default()
+        }],
+        bot: None,
+    };
+    let parsed = spec::parse(
+        "guild_id: \"1\"\nchannels:\n  - { key: wiki, type: forum, name: wiki, require_tag: true, tags: [Guide] }\n",
+    )
+    .unwrap();
+    let (desired, diags) = spec::expand(&parsed);
+    assert!(!concord::diag::has_errors(&diags), "{diags:#?}");
+    let api = MemoryApi::new(snap);
+    let p = plan(
+        &desired,
+        &to_live(&api.state()),
+        &Lockfile::default(),
+        &PlanOptions::default(),
+    );
+    let mut applier = Applier::new(&p);
+    block_on(applier.run_all(&api, &p.ops, |_, _, _| {}))
+        .unwrap_or_else(|(i, e)| panic!("op {i} failed: {e}"));
+    let again = plan(
+        &desired,
+        &to_live(&api.state()),
+        applier.lock(),
+        &PlanOptions::default(),
+    );
+    assert!(again.ops.is_empty(), "{:#?}", again.ops);
+}

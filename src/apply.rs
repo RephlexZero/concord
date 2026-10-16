@@ -7,7 +7,7 @@
 //! lockfile current after every op, so a run that stops halfway can simply be
 //! planned and applied again.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde_json::{json, Map, Value};
 
@@ -36,6 +36,11 @@ pub struct Applier {
     lock: Lockfile,
     roles: HashMap<String, u64>,
     channels: HashMap<String, u64>,
+    /// Forums whose tags this plan sets later on.
+    tags_pending: HashSet<u64>,
+    /// `flags` to send once a forum's tags are set: Discord refuses to require
+    /// a tag on a forum that has none yet.
+    deferred_flags: HashMap<u64, u64>,
 }
 
 impl Applier {
@@ -55,6 +60,15 @@ impl Applier {
             lock,
             roles: HashMap::new(),
             channels: HashMap::new(),
+            tags_pending: plan
+                .ops
+                .iter()
+                .filter_map(|op| match op {
+                    Op::SetForumTags(t) => Some(t.id),
+                    _ => None,
+                })
+                .collect(),
+            deferred_flags: HashMap::new(),
         }
     }
 
@@ -90,8 +104,20 @@ impl Applier {
             }
             Op::CreateChannel(c) => self.create_channel(api, c).await,
             Op::UpdateChannel(u) => {
-                let body = self.channel_patch(u)?;
-                self.send(api, Endpoint::UpdateChannel(u.id), body).await?;
+                let mut body = self.channel_patch(u)?;
+                let requires_tag = u
+                    .changes
+                    .iter()
+                    .any(|f| matches!(f, ChannelField::RequireTag(c) if c.after));
+                if requires_tag && self.tags_pending.contains(&u.id) {
+                    if let Some(flags) = body.as_object_mut().and_then(|b| b.remove("flags")) {
+                        self.deferred_flags
+                            .insert(u.id, flags.as_u64().unwrap_or_default());
+                    }
+                }
+                if body.as_object().is_some_and(|b| !b.is_empty()) {
+                    self.send(api, Endpoint::UpdateChannel(u.id), body).await?;
+                }
                 Ok(())
             }
             Op::SetForumTags(t) => self.set_tags(api, t).await,
@@ -125,6 +151,15 @@ impl Applier {
                         Ok(json!({ "id": self.role_id(r)?.to_string(), "position": pos }))
                     })
                     .collect::<Result<Vec<_>, ApplyError>>()?;
+                // Positions are counted 1..n below the bot's role, which only
+                // fits if Discord's numbering has no gaps or ties, and a new
+                // role ties with the lowest one. Any position change makes
+                // Discord renumber every role, so first move the role that
+                // belongs at the bottom there.
+                if let Some(last) = items.last() {
+                    let settle = json!([{ "id": last["id"], "position": 1 }]);
+                    self.send(api, Endpoint::RolePositions, settle).await?;
+                }
                 self.send(api, Endpoint::RolePositions, Value::Array(items))
                     .await?;
                 Ok(())
@@ -340,6 +375,15 @@ impl Applier {
             )
             .await?;
         self.bind_new_tags(&t.key, &t.after, &resp);
+        self.tags_pending.remove(&t.id);
+        if let Some(flags) = self.deferred_flags.remove(&t.id) {
+            self.send(
+                api,
+                Endpoint::UpdateChannel(t.id),
+                json!({ "flags": flags }),
+            )
+            .await?;
+        }
         Ok(())
     }
 
