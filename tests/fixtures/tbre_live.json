@@ -1,0 +1,1778 @@
+{
+  "guild": {
+    "id": "1000000000004232083",
+    "name": "TBRe",
+    "owner_id": "1000000000004232090",
+    "rules_channel_id": "1000000000004233253",
+    "public_updates_channel_id": "1000000000004233304",
+    "system_channel_id": null,
+    "afk_channel_id": null,
+    "features": [
+      "COMMUNITY",
+      "NEWS"
+    ]
+  },
+  "roles": [
+    {
+      "id": "1000000000004232083",
+      "name": "@everyone",
+      "color": 0,
+      "hoist": false,
+      "position": 0,
+      "permissions": "311489318465",
+      "managed": false,
+      "mentionable": false,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233100",
+      "name": "Concord",
+      "color": 0,
+      "colors": {
+        "primary_color": 0,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": false,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 6,
+      "permissions": "8",
+      "managed": true,
+      "mentionable": false,
+      "flags": 0,
+      "tags": {
+        "bot_id": "1000000000004233117"
+      }
+    },
+    {
+      "id": "1000000000004233134",
+      "name": "MEE6",
+      "color": 0,
+      "colors": {
+        "primary_color": 0,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": false,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 5,
+      "permissions": "8",
+      "managed": true,
+      "mentionable": false,
+      "flags": 0,
+      "tags": {
+        "bot_id": "1000000000004233151"
+      }
+    },
+    {
+      "id": "1000000000004233168",
+      "name": "Director",
+      "color": 15844367,
+      "colors": {
+        "primary_color": 15844367,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": true,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 4,
+      "permissions": "0",
+      "managed": false,
+      "mentionable": false,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233185",
+      "name": "Lead",
+      "color": 10181046,
+      "colors": {
+        "primary_color": 10181046,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": true,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 3,
+      "permissions": "0",
+      "managed": false,
+      "mentionable": false,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233202",
+      "name": "Alumni",
+      "color": 9807270,
+      "colors": {
+        "primary_color": 9807270,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": false,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 2,
+      "permissions": "0",
+      "managed": false,
+      "mentionable": false,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233219",
+      "name": "Server Booster",
+      "color": 16023551,
+      "colors": {
+        "primary_color": 16023551,
+        "secondary_color": null,
+        "tertiary_color": null
+      },
+      "hoist": false,
+      "icon": null,
+      "unicode_emoji": null,
+      "position": 1,
+      "permissions": "0",
+      "managed": true,
+      "mentionable": false,
+      "flags": 0,
+      "tags": {
+        "bot_id": "1000000000004233236"
+      }
+    }
+  ],
+  "channels": [
+    {
+      "id": "1000000000004233253",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "rules",
+      "position": 0,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "2048"
+        }
+      ],
+      "parent_id": null,
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233270",
+      "type": 5,
+      "guild_id": "1000000000004232083",
+      "name": "announcements",
+      "position": 1,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "2048"
+        },
+        {
+          "id": "1000000000004233185",
+          "type": 0,
+          "allow": "2048",
+          "deny": "0"
+        },
+        {
+          "id": "1000000000004233168",
+          "type": 0,
+          "allow": "2048",
+          "deny": "0"
+        }
+      ],
+      "parent_id": null,
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null
+    },
+    {
+      "id": "1000000000004233287",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "introductions",
+      "position": 2,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233304",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "moderator-only",
+      "position": 3,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233168",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": null,
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233321",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "general",
+      "position": 0,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233338",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "general",
+      "position": 4,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233321",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233355",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "random",
+      "position": 5,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233321",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233372",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "directors",
+      "position": 1,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233168",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233389",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "directors-chat",
+      "position": 6,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233168",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": "1000000000004233372",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233406",
+      "type": 2,
+      "guild_id": "1000000000004232083",
+      "name": "Directors",
+      "position": 7,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233168",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": "1000000000004233372",
+      "flags": 0,
+      "bitrate": 64000,
+      "user_limit": 0,
+      "rtc_region": null,
+      "nsfw": false,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233423",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "leads",
+      "position": 2,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233185",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233440",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "leads-chat",
+      "position": 8,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233185",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": "1000000000004233423",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233457",
+      "type": 2,
+      "guild_id": "1000000000004232083",
+      "name": "Leads",
+      "position": 9,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "1024"
+        },
+        {
+          "id": "1000000000004233185",
+          "type": 0,
+          "allow": "1024",
+          "deny": "0"
+        }
+      ],
+      "parent_id": "1000000000004233423",
+      "flags": 0,
+      "bitrate": 64000,
+      "user_limit": 0,
+      "rtc_region": null,
+      "nsfw": false,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233474",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "voice",
+      "position": 3,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233491",
+      "type": 2,
+      "guild_id": "1000000000004232083",
+      "name": "General",
+      "position": 10,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233474",
+      "flags": 0,
+      "bitrate": 64000,
+      "user_limit": 0,
+      "rtc_region": null,
+      "nsfw": false,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233508",
+      "type": 2,
+      "guild_id": "1000000000004232083",
+      "name": "Meeting Room 1",
+      "position": 11,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233474",
+      "flags": 0,
+      "bitrate": 64000,
+      "user_limit": 0,
+      "rtc_region": null,
+      "nsfw": false,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233525",
+      "type": 2,
+      "guild_id": "1000000000004232083",
+      "name": "Meeting Room 2",
+      "position": 12,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233474",
+      "flags": 0,
+      "bitrate": 64000,
+      "user_limit": 0,
+      "rtc_region": null,
+      "nsfw": false,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233542",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "engineering 🏁",
+      "position": 4,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233780",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "interfaces",
+      "position": 13,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004232083",
+          "type": 0,
+          "allow": "0",
+          "deny": "2048"
+        },
+        {
+          "id": "1000000000004233185",
+          "type": 0,
+          "allow": "2048",
+          "deny": "0"
+        }
+      ],
+      "parent_id": "1000000000004233542",
+      "flags": 0,
+      "topic": "One post per subteam boundary. Title it `A ↔ B`. Leads create posts; everyone replies.",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004233559",
+          "name": "Mech Inboard",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233576",
+          "name": "Mech Outboard",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233593",
+          "name": "Powertrain",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233610",
+          "name": "Elec",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233627",
+          "name": "Systems",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233644",
+          "name": "Controls",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233661",
+          "name": "Aero",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233678",
+          "name": "VD",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233695",
+          "name": "Driverless",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233712",
+          "name": "Trackside",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233729",
+          "name": "Agreed",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233746",
+          "name": "Under Change",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233763",
+          "name": "Old",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 0,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004233797",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "engineering-main",
+      "position": 14,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233542",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004233814",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "mech-inboard 🔩",
+      "position": 5,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004233831",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "mech-inboard-main",
+      "position": 15,
+      "permission_overwrites": [
+        {
+          "id": "1000000000004233202",
+          "type": 0,
+          "allow": "0",
+          "deny": "2048"
+        }
+      ],
+      "parent_id": "1000000000004233814",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004234086",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "mech-inboard-forum",
+      "position": 16,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004233814",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004233848",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233865",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233882",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233899",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233916",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233933",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233950",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233967",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004233984",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234001",
+          "name": "Chassis",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234018",
+          "name": "Pedal Box",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234035",
+          "name": "Steering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234052",
+          "name": "Seat",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234069",
+          "name": "Firewall",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004234103",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "mech-outboard 🛞",
+      "position": 6,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004234120",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "mech-outboard-main",
+      "position": 17,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234103",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004234375",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "mech-outboard-forum",
+      "position": 18,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234103",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004234137",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234154",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234171",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234188",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234205",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234222",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234239",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234256",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234273",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234290",
+          "name": "Uprights",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234307",
+          "name": "Hubs",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234324",
+          "name": "Wishbones",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234341",
+          "name": "Brakes",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234358",
+          "name": "Wheels",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004234392",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "old-cad-links",
+      "position": 19,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234103",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004234409",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "powertrain ⚙️",
+      "position": 7,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004234426",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "powertrain-main",
+      "position": 20,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234409",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004234681",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "powertrain-forum",
+      "position": 21,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234409",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004234443",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234460",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234477",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234494",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234511",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234528",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234545",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234562",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234579",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234596",
+          "name": "Motor",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234613",
+          "name": "Inverter",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234630",
+          "name": "Gearbox",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234647",
+          "name": "Cooling",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234664",
+          "name": "Driveshafts",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004234698",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "elec ⚡",
+      "position": 8,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004234715",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "elec-main",
+      "position": 22,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234698",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004234970",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "elec-forum",
+      "position": 23,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234698",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004234732",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234749",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234766",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234783",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234800",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234817",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234834",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234851",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234868",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234885",
+          "name": "Accumulator",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234902",
+          "name": "BMS",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234919",
+          "name": "LV Harness",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234936",
+          "name": "HV Harness",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004234953",
+          "name": "PCBs",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004234987",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "systems 🧩",
+      "position": 9,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004235004",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "systems-general",
+      "position": 24,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234987",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004235242",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "systems-forum",
+      "position": 25,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004234987",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004235021",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235038",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235055",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235072",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235089",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235106",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235123",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235140",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235157",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235174",
+          "name": "Requirements",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235191",
+          "name": "Integration",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235208",
+          "name": "Validation",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235225",
+          "name": "Docs",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004235259",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "controls 🎛️",
+      "position": 10,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004235276",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "controls-general",
+      "position": 26,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235259",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004235514",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "controls-forum",
+      "position": 27,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235259",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004235293",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235310",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235327",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235344",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235361",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235378",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235395",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235412",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235429",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235446",
+          "name": "VCU",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235463",
+          "name": "Torque Vectoring",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235480",
+          "name": "Telemetry",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235497",
+          "name": "Firmware",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004235531",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "aero 🌬️",
+      "position": 11,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004235548",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "aero-main",
+      "position": 28,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235531",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004235803",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "aero-forum",
+      "position": 29,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235531",
+      "flags": 0,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004235565",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235582",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235599",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235616",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235633",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235650",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235667",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235684",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235701",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235718",
+          "name": "Front Wing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235735",
+          "name": "Rear Wing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235752",
+          "name": "Undertray",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235769",
+          "name": "CFD",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235786",
+          "name": "Wind Tunnel",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 2,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    },
+    {
+      "id": "1000000000004235820",
+      "type": 4,
+      "guild_id": "1000000000004232083",
+      "name": "vehicle-dynamics 🪄",
+      "position": 12,
+      "permission_overwrites": [],
+      "parent_id": null,
+      "flags": 0
+    },
+    {
+      "id": "1000000000004235837",
+      "type": 0,
+      "guild_id": "1000000000004232083",
+      "name": "vd-main",
+      "position": 30,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235820",
+      "flags": 0,
+      "topic": null,
+      "nsfw": false,
+      "last_message_id": null,
+      "rate_limit_per_user": 0
+    },
+    {
+      "id": "1000000000004236058",
+      "type": 15,
+      "guild_id": "1000000000004232083",
+      "name": "vd-forum",
+      "position": 31,
+      "permission_overwrites": [],
+      "parent_id": "1000000000004235820",
+      "flags": 16,
+      "topic": "What / why / deadline / who you need",
+      "nsfw": false,
+      "rate_limit_per_user": 0,
+      "available_tags": [
+        {
+          "id": "1000000000004235854",
+          "name": "Question",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235871",
+          "name": "Issue",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235888",
+          "name": "Testing",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235905",
+          "name": "How-to",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235922",
+          "name": "Ordering",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235939",
+          "name": "Open",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235956",
+          "name": "In Progress",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235973",
+          "name": "Blocked",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004235990",
+          "name": "Resolved",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004236007",
+          "name": "Kinematics",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004236024",
+          "name": "Tyres",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        },
+        {
+          "id": "1000000000004236041",
+          "name": "Sim",
+          "moderated": false,
+          "emoji_id": null,
+          "emoji_name": null
+        }
+      ],
+      "default_reaction_emoji": null,
+      "default_sort_order": null,
+      "default_forum_layout": 1,
+      "default_thread_rate_limit_per_user": 0,
+      "default_auto_archive_duration": 4320
+    }
+  ],
+  "bot": {
+    "user": {
+      "id": "1000000000004232088",
+      "username": "concord"
+    },
+    "member": {
+      "roles": [
+        "1000000000004233100"
+      ]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+[package]
+name = "concord"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Declarative, Terraform-style management of a Discord server's structure"
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+dotenvy = "0.15"
+indexmap = { version = "2", features = ["serde"] }
+owo-colors = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_path_to_error = "0.1"
+serde_yaml_ng = "0.10"
+thiserror = "2"
+tokio = { version = "1", features = ["rt", "macros"] }
+twilight-http = "0.17"
+twilight-model = "0.17"
+
+[dev-dependencies]
+pretty_assertions = "1"

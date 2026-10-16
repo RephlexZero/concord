@@ -1,0 +1,4 @@
+/target
+.env
+snapshot*.json
+*.json.tmp

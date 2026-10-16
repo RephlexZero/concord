@@ -1,0 +1,81 @@
+concord plan for TBRe (1000000000004232083)
+
+Roles
+  + create   @Mod  #3498db, hoisted
+  ~ update   @Lead
+      color        #9b59b6 → #e91e63
+  ~ reorder  roles (highest first)
+      before: Concord, MEE6, Director, Lead, Alumni, Server Booster
+      after:  Concord, MEE6, Director, Mod, Lead, Alumni, Server Booster
+
+Channels
+  = adopt    #introductions  (already exists as 1000000000004233287; recorded in the lockfile)
+  + create   category driverless 🤖
+  + create   category trackside 🏎️
+      recreating: the lockfile's ID 1000000000005232082 no longer exists
+  + create   #wiki  (forum)
+      guidelines: One post per topic. Keep the first message up to date.
+      tags: Guide, Process, Reference, Onboarding
+      perms: @everyone deny CREATE_POSTS
+      perms: Director allow CREATE_POSTS
+      perms: Lead allow CREATE_POSTS
+  + create   #design-reviews in engineering 🏁  (forum)
+      guidelines: What is being reviewed, and the requirements it must meet...
+      tags: Concept, Detailed, Pre-manufacture, Mech Inboard, Mech Outboard, Powertrain, Elec, Systems, Controls, Aero, VD, Driverless, Trackside, Approved [mod], Changes Requested [mod]
+      require_tag: true
+      perms: Lead allow MANAGE_POSTS
+  + create   #driverless-main in driverless 🤖  (text)
+  + create   #driverless-forum in driverless 🤖  (forum)
+      guidelines: What / why / deadline / who you need
+      tags: Question, Issue, Testing, How-to, Ordering, Open, In Progress, Blocked, Resolved, Perception, SLAM, Planning, Control, Sim
+      require_tag: true
+      layout: list
+      sort: activity
+  + create   #trackside-main in trackside 🏎️  (text)
+  + create   #trackside-forum in trackside 🏎️  (forum)
+      guidelines: What / why / deadline / who you need
+      tags: Question, Issue, Testing, How-to, Ordering, Open, In Progress, Blocked, Resolved, Logistics, Spares, Setup Sheets, Data, Safety
+      require_tag: true
+      layout: list
+      sort: activity
+  ~ update   #systems-general
+      name         systems-general → systems-main
+  ~ update   #controls-general
+      name         controls-general → controls-main
+  ~ update   #aero-forum
+      require_tag  false → true
+      layout       gallery → list
+  ~ tags     #interfaces
+      ~ Agreed: moderated false → true
+      (1 unmanaged tag(s) kept; existing tags keep their IDs)
+  ~ tags     #vd-forum
+      + Setup
+  ~ perms    #moderator-only
+      + Mod            allow +VIEW_CHANNEL
+  ~ perms    category leads
+      + Director       allow +VIEW_CHANNEL
+      + re-syncs 2 channel(s): #leads-chat, 🔊Leads
+  ~ perms    #interfaces
+        Lead           allow +MANAGE_POSTS
+  ~ perms    #mech-inboard-main  (re-sync with category mech-inboard 🔩)
+      - Alumni         deny -SEND_MESSAGES
+  ~ reorder  uncategorised channels
+      before: rules, announcements, introductions, moderator-only
+      after:  rules, announcements, wiki, introductions, moderator-only
+  ~ reorder  categories
+      before: general, directors, leads, voice, engineering 🏁, mech-inboard 🔩, mech-outboard 🛞, powertrain ⚙️, elec ⚡, systems 🧩, controls 🎛️, aero 🌬️, vehicle-dynamics 🪄
+      after:  general, directors, leads, engineering 🏁, mech-inboard 🔩, mech-outboard 🛞, powertrain ⚙️, elec ⚡, systems 🧩, controls 🎛️, aero 🌬️, vehicle-dynamics 🪄, driverless 🤖, trackside 🏎️, voice
+  ~ reorder  engineering 🏁
+      before: interfaces, engineering-main
+      after:  engineering-main, interfaces, design-reviews
+
+Unmanaged (on Discord but not in the spec; left alone, --prune deletes them)
+  ? tag       Old in #interfaces
+  ? role      @Alumni
+  ? text      #random in general
+  ? text      #old-cad-links in mech-outboard 🛞
+
+warning categories.trackside: lockfile says `trackside` is 1000000000005232082, but that channel no longer exists
+  hint: it will be created again
+
+Plan: 9 to create, 12 to update, 2 to reorder, 1 to adopt, 4 unmanaged.

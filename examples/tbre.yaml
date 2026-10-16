@@ -1,0 +1,158 @@
+# TBRe Discord server: target structure.
+#
+# Keys (`key:`, category names under `categories:`) are permanent identities.
+# Change `name:` to rename something; keep the key.
+#
+# Mode is `partial` (the default): anything not written here (role
+# permissions, topics, slowmode, ...) is left as it is on Discord. Set
+# `concord: { mode: authoritative }` to make this file the whole truth.
+
+guild_id: "1000000000004232083"
+
+roles: # highest first
+  - { key: director, name: Director, color: "#f1c40f", hoist: true }
+  - { key: mod,      name: Mod,      color: "#3498db", hoist: true }
+  - { key: lead,     name: Lead,     color: "#e91e63", hoist: true }
+
+tag_sets:
+  base: [Question, Issue, Testing, How-to, Ordering, Open, In Progress, Blocked, Resolved]
+  subteams:
+    [Mech Inboard, Mech Outboard, Powertrain, Elec, Systems, Controls, Aero, VD, Driverless, Trackside]
+
+templates:
+  # One per subteam: a chat channel and a forum for questions/issues.
+  subteam:
+    channels:
+      - { key: main, type: text, name: "{slug}-main" }
+      - key: forum
+        type: forum
+        name: "{slug}-forum"
+        tags: [base, "{subsystems}"]
+        require_tag: true
+        layout: list
+        sort: activity
+        guidelines: "What / why / deadline / who you need"
+
+# Uncategorised channels (Discord always shows these above all categories).
+channels:
+  - key: rules
+    type: text
+    name: rules
+    overrides: { "@everyone": { deny: [SEND_MESSAGES] } }
+  - key: announcements
+    type: announcement
+    name: announcements
+    overrides:
+      "@everyone": { deny: [SEND_MESSAGES] }
+      Lead: { allow: [SEND_MESSAGES] }
+      Director: { allow: [SEND_MESSAGES] }
+  - key: wiki
+    type: forum
+    name: wiki
+    tags: [Guide, Process, Reference, Onboarding]
+    guidelines: "One post per topic. Keep the first message up to date."
+    overrides:
+      "@everyone": { deny: [CREATE_POSTS] }
+      Lead: { allow: [CREATE_POSTS] }
+      Director: { allow: [CREATE_POSTS] }
+  - { key: introductions, type: text, name: introductions }
+  - { key: moderator-only, type: text, name: moderator-only, private: [Director, Mod] }
+
+categories:
+  general:
+    name: general
+    channels:
+      - { key: general-chat, type: text, name: general }
+
+  directors:
+    name: directors
+    private: [Director]
+    channels:
+      - { key: directors-chat, type: text, name: directors-chat }
+      - { key: directors-voice, type: voice, name: Directors }
+
+  leads:
+    name: leads
+    private: [Lead, Director]
+    channels:
+      - { key: leads-chat, type: text, name: leads-chat }
+      - { key: leads-voice, type: voice, name: Leads }
+
+  engineering:
+    name: "engineering 🏁"
+    channels:
+      - { key: engineering-main, type: text, name: engineering-main }
+      - key: interfaces
+        type: forum
+        name: interfaces
+        guidelines: "One post per subteam boundary. Title it `A ↔ B`. Leads create posts; everyone replies."
+        tags: [subteams, { name: Agreed, moderated: true }, Under Change]
+        overrides:
+          "@everyone": { deny: [CREATE_POSTS] }
+          # MANAGE_POSTS lets leads apply the moderated `Agreed` tag.
+          Lead: { allow: [CREATE_POSTS, MANAGE_POSTS] }
+      - key: design-reviews
+        type: forum
+        name: design-reviews
+        require_tag: true
+        guidelines: |
+          What is being reviewed, and the requirements it must meet.
+          Evidence (calcs, sims, test data) and CAD/drawing links.
+          Interfaces affected, reviewers wanted, and the deadline.
+        tags:
+          - Concept
+          - Detailed
+          - Pre-manufacture
+          - subteams
+          - { name: Approved, moderated: true }
+          - { name: Changes Requested, moderated: true }
+        overrides:
+          Lead: { allow: [MANAGE_POSTS] }
+
+  mech-inboard:
+    template: subteam
+    name: "mech-inboard 🔩"
+    vars: { slug: mech-inboard, subsystems: [Chassis, Pedal Box, Steering, Seat, Firewall] }
+  mech-outboard:
+    template: subteam
+    name: "mech-outboard 🛞"
+    vars: { slug: mech-outboard, subsystems: [Uprights, Hubs, Wishbones, Brakes, Wheels] }
+  powertrain:
+    template: subteam
+    name: "powertrain ⚙️"
+    vars: { slug: powertrain, subsystems: [Motor, Inverter, Gearbox, Cooling, Driveshafts] }
+  elec:
+    template: subteam
+    name: "elec ⚡"
+    vars: { slug: elec, subsystems: [Accumulator, BMS, LV Harness, HV Harness, PCBs] }
+  systems:
+    template: subteam
+    name: "systems 🧩"
+    vars: { slug: systems, subsystems: [Requirements, Integration, Validation, Docs] }
+  controls:
+    template: subteam
+    name: "controls 🎛️"
+    vars: { slug: controls, subsystems: [VCU, Torque Vectoring, Telemetry, Firmware] }
+  aero:
+    template: subteam
+    name: "aero 🌬️"
+    vars: { slug: aero, subsystems: [Front Wing, Rear Wing, Undertray, CFD, Wind Tunnel] }
+  vd:
+    template: subteam
+    name: "vehicle-dynamics 🪄"
+    vars: { slug: vd, subsystems: [Kinematics, Tyres, Sim, Setup] }
+  driverless:
+    template: subteam
+    name: "driverless 🤖"
+    vars: { slug: driverless, subsystems: [Perception, SLAM, Planning, Control, Sim] }
+  trackside:
+    template: subteam
+    name: "trackside 🏎️"
+    vars: { slug: trackside, subsystems: [Logistics, Spares, Setup Sheets, Data, Safety] }
+
+  voice:
+    name: voice
+    channels:
+      - { key: voice-general, type: voice, name: General }
+      - { key: voice-meeting-1, type: voice, name: Meeting Room 1 }
+      - { key: voice-meeting-2, type: voice, name: Meeting Room 2 }
