@@ -1,0 +1,111 @@
+name: concord
+description: Plan and apply a Discord server's roles, channels and permissions from a YAML spec, Terraform-style.
+author: RephlexZero
+branding:
+  icon: git-pull-request
+  color: purple
+
+inputs:
+  command:
+    description: "`plan` (show changes) or `apply` (make the server match)."
+    required: true
+  spec:
+    description: Path to the spec.
+    default: server.yaml
+  lock:
+    description: Lockfile path. Defaults to concord.lock.json next to the spec.
+    default: ""
+  discord-token:
+    description: The bot token. Pass it from a secret.
+    default: ""
+  prune:
+    description: Also delete roles and channels that aren't in the spec.
+    default: "false"
+  fail-on-changes:
+    description: "With `plan`: fail if the server differs from the spec (for drift checks)."
+    default: "false"
+  comment:
+    description: "With `plan` on a pull request: post the plan as a PR comment. Needs `pull-requests: write`."
+    default: "true"
+  commit-lockfile:
+    description: "With `apply`: commit and push the updated lockfile. Needs `contents: write`."
+    default: "true"
+  upload-backup:
+    description: "With `apply`: keep the pre-apply backup of the server as an artifact."
+    default: "true"
+  state-file:
+    description: "With `plan`: read the server from a snapshot file instead of Discord (no token needed)."
+    default: ""
+  version:
+    description: >-
+      concord release to run, e.g. `v0.1.0`. Defaults to the release matching
+      the ref this action was used at (`@v0.1.0`, or the latest release for
+      `@v0`); any other ref builds the action's own source.
+    default: ""
+
+outputs:
+  exit-code:
+    description: "concord's exit code: plan 0 = no changes, 2 = changes, 1 = error; apply 0 = done, 1 = error."
+    value: ${{ steps.run.outputs.exit-code }}
+  changes:
+    description: "`true` if the plan has changes, or apply made some."
+    value: ${{ steps.run.outputs.changes }}
+  output-file:
+    description: Path to concord's full output.
+    value: ${{ steps.run.outputs.output-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install concord
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
+        ACTION_REPO: ${{ github.action_repository }}
+      run: bash "$GITHUB_ACTION_PATH/action/install.sh"
+
+    - name: concord ${{ inputs.command }}
+      id: run
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        SPEC: ${{ inputs.spec }}
+        LOCK: ${{ inputs.lock }}
+        PRUNE: ${{ inputs.prune }}
+        STATE_FILE: ${{ inputs.state-file }}
+        DISCORD_TOKEN: ${{ inputs.discord-token }}
+      run: bash "$GITHUB_ACTION_PATH/action/run.sh"
+
+    - name: Comment the plan on the pull request
+      if: inputs.command == 'plan' && inputs.comment == 'true' && github.event_name == 'pull_request' && steps.run.outputs.exit-code != ''
+      uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+      with:
+        header: concord ${{ inputs.spec }}
+        path: ${{ steps.run.outputs.summary-file }}
+
+    - name: Commit the lockfile
+      if: always() && inputs.command == 'apply' && inputs.commit-lockfile == 'true' && steps.run.outputs.exit-code != ''
+      shell: bash
+      env:
+        LOCKFILE: ${{ steps.run.outputs.lockfile }}
+      run: bash "$GITHUB_ACTION_PATH/action/commit-lock.sh"
+
+    - name: Keep the pre-apply backup
+      if: always() && inputs.command == 'apply' && inputs.upload-backup == 'true' && steps.run.outputs.exit-code != ''
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: concord-backup-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ steps.run.outputs.backup-dir }}
+        include-hidden-files: true
+        if-no-files-found: ignore
+        retention-days: 90
+
+    - name: Result
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        CODE: ${{ steps.run.outputs.exit-code }}
+        FAIL_ON_CHANGES: ${{ inputs.fail-on-changes }}
+        SPEC: ${{ inputs.spec }}
+      run: bash "$GITHUB_ACTION_PATH/action/result.sh"
