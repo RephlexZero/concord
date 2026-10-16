@@ -514,7 +514,7 @@ mod tests {
             Emoji::parse("✅").unwrap(),
             Emoji::parse("✅\u{FE0F}").unwrap()
         );
-        assert_eq!(Emoji::parse("<:tbre:123>").unwrap(), Emoji::Custom(123));
+        assert_eq!(Emoji::parse("<:team:123>").unwrap(), Emoji::Custom(123));
         assert_eq!(Emoji::parse("id:42").unwrap(), Emoji::Custom(42));
         assert!(Emoji::parse("check").is_err());
     }

@@ -1,4 +1,4 @@
-# TBRe Discord server: target structure.
+# Example: the Discord server of a Formula Student team.
 #
 # Keys (`key:`, category names under `categories:`) are permanent identities.
 # Change `name:` to rename something; keep the key.

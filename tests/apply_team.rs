@@ -1,4 +1,4 @@
-//! Apply `examples/tbre.yaml` to an in-memory copy of the fixture server,
+//! Apply `examples/racing-team.yaml` to an in-memory copy of the fixture server,
 //! then plan again: a correct apply leaves nothing to do.
 
 mod common;
@@ -12,14 +12,14 @@ use concord::model::Desired;
 use concord::spec;
 
 fn desired() -> Desired {
-    let parsed = spec::load(&common::root().join("examples/tbre.yaml")).unwrap();
+    let parsed = spec::load(&common::root().join("examples/racing-team.yaml")).unwrap();
     let (desired, diags) = spec::expand(&parsed);
     assert!(!concord::diag::has_errors(&diags), "{diags:#?}");
     desired
 }
 
 fn snapshot() -> Snapshot {
-    let path = common::root().join("tests/fixtures/tbre_live.json");
+    let path = common::root().join("tests/fixtures/team_live.json");
     serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
 }
 
@@ -66,7 +66,7 @@ fn assert_converged(api: &MemoryApi, lock: &Lockfile, prune: bool) {
 #[test]
 fn apply_converges() {
     let api = MemoryApi::new(snapshot());
-    let (p, lock) = apply(&api, &common::lock_fixture("tbre.lock.json"), false);
+    let (p, lock) = apply(&api, &common::lock_fixture("team.lock.json"), false);
     assert!(p.has_changes());
     assert_converged(&api, &lock, false);
 }
@@ -74,7 +74,7 @@ fn apply_converges() {
 #[test]
 fn apply_with_prune_converges() {
     let api = MemoryApi::new(snapshot());
-    let (_, lock) = apply(&api, &common::lock_fixture("tbre.lock.json"), true);
+    let (_, lock) = apply(&api, &common::lock_fixture("team.lock.json"), true);
     assert_converged(&api, &lock, true);
     let live = to_live(&api.state());
     let p = plan(&desired(), &live, &lock, &PlanOptions { prune: true });
@@ -84,7 +84,7 @@ fn apply_with_prune_converges() {
 #[test]
 fn records_every_created_object_in_the_lockfile() {
     let api = MemoryApi::new(snapshot());
-    let (_, lock) = apply(&api, &common::lock_fixture("tbre.lock.json"), false);
+    let (_, lock) = apply(&api, &common::lock_fixture("team.lock.json"), false);
     for key in ["mod", "lead", "director"] {
         assert!(lock.roles.contains_key(key), "role {key}");
     }
@@ -119,7 +119,7 @@ fn existing_forum_tags_are_sent_back_with_their_ids() {
     let id = vd_forum.id.0;
 
     let api = MemoryApi::new(snap);
-    apply(&api, &common::lock_fixture("tbre.lock.json"), false);
+    apply(&api, &common::lock_fixture("team.lock.json"), false);
     let sent = api
         .log()
         .into_iter()
@@ -145,7 +145,7 @@ fn existing_forum_tags_are_sent_back_with_their_ids() {
 #[test]
 fn a_second_apply_after_an_interrupted_one_finishes_the_job() {
     let api = MemoryApi::new(snapshot());
-    let lock = common::lock_fixture("tbre.lock.json");
+    let lock = common::lock_fixture("team.lock.json");
     let p = plan(
         &desired(),
         &to_live(&api.state()),

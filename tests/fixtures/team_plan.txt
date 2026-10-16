@@ -1,4 +1,4 @@
-concord plan for TBRe (1000000000004232083)
+concord plan for Example Racing (1000000000004232083)
 
 Roles
   + create   @Mod  #3498db, hoisted

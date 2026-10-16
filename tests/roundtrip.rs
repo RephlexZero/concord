@@ -9,7 +9,7 @@ use concord::{import, spec};
 
 #[test]
 fn import_then_plan_shows_no_changes() {
-    let live = common::live_fixture("tbre_live.json");
+    let live = common::live_fixture("team_live.json");
     let imported = import::import(&live);
     let yaml = import::to_yaml(&imported.spec, &live.guild.name);
 
@@ -34,7 +34,7 @@ fn import_then_plan_shows_no_changes() {
 
 #[test]
 fn imported_spec_without_a_lockfile_only_adopts() {
-    let live = common::live_fixture("tbre_live.json");
+    let live = common::live_fixture("team_live.json");
     let imported = import::import(&live);
     let (desired, _) = spec::expand(&imported.spec);
 
@@ -55,7 +55,7 @@ fn imported_spec_without_a_lockfile_only_adopts() {
 
 #[test]
 fn imported_lockfile_matches_the_server() {
-    let live = common::live_fixture("tbre_live.json");
+    let live = common::live_fixture("team_live.json");
     let imported = import::import(&live);
     for (key, id) in imported.lock.channels.iter() {
         assert!(live.channel(id.0).is_some(), "{key} → {id}");
