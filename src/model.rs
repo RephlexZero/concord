@@ -153,12 +153,38 @@ impl LiveKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// An emoji. Unicode emoji keep their text exactly as written (Discord can
+/// reject a symbol sent without its variation selector, e.g. "⚖" for "⚖️"),
+/// but compare and hash without variation selectors, since Discord isn't
+/// consistent about returning them.
+#[derive(Debug, Clone)]
 pub enum Emoji {
-    /// A unicode emoji, stored without variation selectors.
     Unicode(String),
     /// A custom guild emoji, by ID.
     Custom(Snowflake),
+}
+
+impl Emoji {
+    fn key(&self) -> Result<String, Snowflake> {
+        match self {
+            Emoji::Unicode(s) => Ok(s.chars().filter(|c| *c != '\u{FE0F}').collect()),
+            Emoji::Custom(id) => Err(*id),
+        }
+    }
+}
+
+impl PartialEq for Emoji {
+    fn eq(&self, other: &Self) -> bool {
+        self.key() == other.key()
+    }
+}
+
+impl Eq for Emoji {}
+
+impl std::hash::Hash for Emoji {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.key().hash(state);
+    }
 }
 
 impl Emoji {
@@ -195,7 +221,7 @@ impl Emoji {
     }
 
     pub fn unicode(s: &str) -> Emoji {
-        Emoji::Unicode(s.chars().filter(|c| *c != '\u{FE0F}').collect())
+        Emoji::Unicode(s.trim().to_owned())
     }
 
     /// From Discord's `{emoji_id, emoji_name}` pair.
