@@ -9,6 +9,22 @@
 
 guild_id: "1000000000004232083"
 
+# Server settings. Each one is optional; anything left out stays as it is.
+server:
+  description: Home of the Example Racing Formula Student team.
+  verification_level: medium
+  default_notifications: mentions
+  content_filter: everyone
+  locale: en-GB
+  system_channel: general-chat # channel keys, as everywhere else
+  system_messages: { join: true, join_replies: false, setup_tips: false }
+  rules_channel: rules
+  updates_channel: moderator-only
+  safety_alerts_channel: moderator-only
+  afk_channel: voice-general
+  afk_timeout: 15m
+  widget: { enabled: true, channel: introductions }
+
 roles: # highest first
   - { key: director, name: Director, color: "#f1c40f", hoist: true }
   - { key: mod,      name: Mod,      color: "#3498db", hoist: true }
@@ -32,6 +48,11 @@ templates:
         layout: list
         sort: activity
         guidelines: "What / why / deadline / who you need"
+    # Each subteam adds itself to the onboarding prompt below.
+    onboarding_option:
+      prompt: subteams
+      title: "{slug}"
+      channels: ["{key}"] # the category: members see all of its channels
 
 # Uncategorised channels (Discord always shows these above all categories).
 channels:
@@ -156,3 +177,95 @@ categories:
       - { key: voice-general, type: voice, name: General }
       - { key: voice-meeting-1, type: voice, name: Meeting Room 1 }
       - { key: voice-meeting-2, type: voice, name: Meeting Room 2 }
+
+# -- Server-wide sections. Each is managed as a whole when present and left
+# alone when absent. Channels are referred to by key, roles by name.
+
+onboarding:
+  # Everyone sees these; Discord wants at least 7 (a category counts its channels).
+  default_channels: [rules, announcements, introductions, general, engineering]
+  prompts:
+    - key: why
+      title: What brings you here?
+      single: true
+      required: true
+      options:
+        - { title: "I'm on the team", emoji: "🏎️", channels: [engineering] }
+        - title: Alumni
+          description: Former team members
+          emoji: "id:1000000000004236301" # a custom emoji, by ID
+          roles: [Alumni]
+    - key: subteams
+      title: Which subteams are you in?
+      type: dropdown
+      # Options come from the `subteam` template.
+
+welcome_screen:
+  description: The Formula Student team server.
+  channels:
+    - { channel: rules, description: Read the rules, emoji: "📜" }
+    - { channel: announcements, description: Team news, emoji: "📣" }
+    - { channel: wiki, description: How we do things, emoji: "📚" }
+
+guide: # the Server Guide
+  welcome:
+    message: "Welcome to Example Racing, [@username]! Start with the to-dos below."
+    authors: ["1000000000004232090"]
+  actions: # to-dos: `view` the channel (default) or `chat` in it
+    - { title: Read the rules, channel: rules, emoji: "📜", description: "The short version: be kind." }
+    - { title: Introduce yourself, channel: introductions, type: chat, emoji: "👋", description: "Who are you, what do you study?" }
+    - { title: Say hello, channel: general-chat, type: chat, emoji: "id:1000000000004236301" }
+  resources:
+    - { title: Interfaces, channel: interfaces, emoji: "🔗", description: Where subteams agree on boundaries }
+    - { title: Wiki, channel: wiki, emoji: "📚", description: Guides and processes }
+
+join_questions: # the form applicants fill in
+  description: Tell us a bit about yourself.
+  rules:
+    - Be respectful
+    - No spam
+    - Keep CAD and sponsor details inside the server
+  questions:
+    - { label: "What's your name?", placeholder: First and last name }
+    - { label: Which year are you in?, type: choice, choices: [1st, 2nd, 3rd, 4th+] }
+    - { label: Why do you want to join?, type: paragraph, required: false }
+
+automod:
+  - key: mention-spam
+    name: Too many mentions
+    trigger: mention_spam
+    mention_limit: 8
+    raid_protection: true
+    actions: [{ block: true }, { timeout: 10m }]
+    exempt_roles: [Director]
+  - key: slurs
+    name: Block slurs
+    trigger: keyword_preset
+    presets: [slurs, profanity]
+    actions: [{ block: "Please keep it civil." }]
+  - key: banned-words
+    name: Banned words
+    trigger: keyword
+    keywords: ["*scam*", "free nitro", "discord.gg/*"]
+    allow: [scampi]
+    actions: [{ block: true }, { alert: moderator-only }]
+    exempt_channels: [moderator-only]
+  - key: spam
+    name: Suspected spam
+    trigger: spam
+    actions: [{ block: true }]
+  - key: profiles
+    name: Profile names
+    trigger: member_profile
+    keywords: ["*nitro*"]
+    actions: [{ block_interactions: true }, { alert: moderator-only }]
+
+emoji:
+  - { key: logo, name: fs_logo } # already on the server: managed by name
+  - { key: chequered, name: chequered_flag, file: assets/chequered.png }
+
+stickers:
+  - { key: box-box, name: Box Box, description: Pit now, emoji: "🛞" }
+
+sounds:
+  - { key: engine-rev, name: Engine Rev, volume: 0.6, emoji: "🏎️" }

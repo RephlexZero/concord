@@ -12,10 +12,7 @@ use concord::model::Desired;
 use concord::spec;
 
 fn desired() -> Desired {
-    let parsed = spec::load(&common::root().join("examples/racing-team.yaml")).unwrap();
-    let (desired, diags) = spec::expand(&parsed);
-    assert!(!concord::diag::has_errors(&diags), "{diags:#?}");
-    desired
+    common::team_desired()
 }
 
 fn snapshot() -> Snapshot {
@@ -212,4 +209,78 @@ fn requiring_tags_waits_until_the_forum_has_some() {
         &PlanOptions::default(),
     );
     assert!(again.ops.is_empty(), "{:#?}", again.ops);
+}
+
+#[test]
+fn server_wide_requests_keep_what_discord_already_has() {
+    let api = MemoryApi::new(snapshot());
+    let (_, lock) = apply(&api, &common::lock_fixture("team.lock.json"), false);
+    let log = api.log();
+    let body = |e: Endpoint| {
+        log.iter()
+            .find(|r| r.endpoint == e)
+            .and_then(|r| r.body.clone())
+            .unwrap_or_else(|| panic!("no {e:?} request"))
+    };
+
+    // Images uploaded in the client stay on Server Guide to-dos.
+    let guide = body(Endpoint::PutGuide);
+    let intro = guide["new_member_actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["title"] == "Introduce yourself")
+        .unwrap();
+    assert_eq!(intro["icon"]["hash"], "f00dfeedf00dfeed");
+
+    // Existing prompts and options keep their IDs, in the spec's order.
+    let onboarding = body(Endpoint::PutOnboarding);
+    let ids = |v: &serde_json::Value| -> Vec<String> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x["id"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let prompts = ids(&onboarding["prompts"]);
+    assert_eq!(
+        prompts[..2],
+        ["1000000000004236101", "1000000000004236102"],
+        "{prompts:?}"
+    );
+    assert_eq!(prompts.len(), 2, "the old prompt is dropped");
+    assert_eq!(
+        ids(&onboarding["prompts"][0]["options"]),
+        ["1000000000004236112", "1000000000004236111"]
+    );
+    let subteams = ids(&onboarding["prompts"][1]["options"]);
+    assert_eq!(subteams.len(), 10);
+    assert!(subteams.contains(&"1000000000004236121".to_owned()));
+
+    // The join form is sent with the version read, rules first.
+    let join = body(Endpoint::UpdateJoinQuestions);
+    assert_eq!(join["version"], "2024-05-01T12:00:00.000000+00:00");
+    assert_eq!(join["form_fields"][0]["field_type"], "TERMS");
+    assert_eq!(
+        join["form_fields"][0]["values"].as_array().unwrap().len(),
+        3
+    );
+
+    // New emoji are uploaded as data URIs.
+    let emoji = body(Endpoint::CreateEmoji);
+    assert!(emoji["image"]
+        .as_str()
+        .unwrap()
+        .starts_with("data:image/png;base64,"));
+
+    for key in ["mention-spam", "slurs", "banned-words", "spam", "profiles"] {
+        assert!(lock.automod.contains_key(key), "automod {key}");
+    }
+    for key in ["why", "why/alumni", "subteams", "subteams/driverless"] {
+        assert!(lock.onboarding.contains_key(key), "onboarding {key}");
+    }
+    assert!(lock.emoji.contains_key("logo") && lock.emoji.contains_key("chequered"));
+    assert!(lock.assets.contains_key("emoji/chequered"));
+    assert_eq!(lock.stickers["box-box"].0, 1000000000004236401);
+    assert_eq!(lock.sounds["engine-rev"].0, 1000000000004236501);
 }

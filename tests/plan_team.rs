@@ -6,12 +6,9 @@ mod common;
 
 use concord::diff::{plan, ChannelField, Op, Plan, PlanOptions};
 use concord::render::{render_plan, Style};
-use concord::spec;
 
 fn team_plan(prune: bool) -> Plan {
-    let parsed = spec::load(&common::root().join("examples/racing-team.yaml")).unwrap();
-    let (desired, diags) = spec::expand(&parsed);
-    assert!(!concord::diag::has_errors(&diags), "{diags:#?}");
+    let desired = common::team_desired();
     let live = common::live_fixture("team_live.json");
     let lock = common::lock_fixture("team.lock.json");
     plan(&desired, &live, &lock, &PlanOptions { prune })

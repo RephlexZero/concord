@@ -9,8 +9,20 @@
     "afk_channel_id": null,
     "features": [
       "COMMUNITY",
-      "NEWS"
-    ]
+      "NEWS",
+      "WELCOME_SCREEN_ENABLED",
+      "GUILD_ONBOARDING"
+    ],
+    "description": "Home of the Example Racing Formula Student team.",
+    "verification_level": 1,
+    "default_message_notifications": 0,
+    "explicit_content_filter": 1,
+    "mfa_level": 0,
+    "preferred_locale": "en-US",
+    "premium_progress_bar_enabled": false,
+    "afk_timeout": 300,
+    "system_channel_flags": 4,
+    "safety_alerts_channel_id": "1000000000004233304"
   },
   "roles": [
     {
@@ -1773,6 +1785,386 @@
       "roles": [
         "1000000000004233100"
       ]
+    }
+  },
+  "community": {
+    "onboarding": {
+      "prompts": [
+        {
+          "id": "1000000000004236101",
+          "type": 0,
+          "title": "What brings you here?",
+          "single_select": true,
+          "required": true,
+          "in_onboarding": true,
+          "options": [
+            {
+              "id": "1000000000004236111",
+              "title": "Alumni",
+              "description": "Former team members",
+              "role_ids": [
+                "1000000000004233202"
+              ],
+              "channel_ids": [],
+              "emoji": {
+                "id": "1000000000004236301",
+                "name": "fs_logo",
+                "animated": false
+              }
+            },
+            {
+              "id": "1000000000004236112",
+              "title": "I'm on the team",
+              "description": "",
+              "role_ids": [],
+              "channel_ids": [
+                "1000000000004233542"
+              ],
+              "emoji": {
+                "id": null,
+                "name": "🏎️"
+              }
+            }
+          ]
+        },
+        {
+          "id": "1000000000004236102",
+          "type": 1,
+          "title": "Which subteam?",
+          "single_select": false,
+          "required": false,
+          "in_onboarding": true,
+          "options": [
+            {
+              "id": "1000000000004236121",
+              "title": "powertrain",
+              "description": null,
+              "role_ids": [],
+              "channel_ids": [
+                "1000000000004234409"
+              ],
+              "emoji": {
+                "id": null,
+                "name": "⚙️"
+              }
+            },
+            {
+              "id": "1000000000004236122",
+              "title": "mech-inboard",
+              "description": null,
+              "role_ids": [],
+              "channel_ids": [
+                "1000000000004233814"
+              ],
+              "emoji": {
+                "id": null,
+                "name": "🔩"
+              }
+            },
+            {
+              "id": "1000000000004236123",
+              "title": "elec",
+              "description": null,
+              "role_ids": [],
+              "channel_ids": [
+                "1000000000004234698"
+              ],
+              "emoji": {
+                "id": null,
+                "name": "⚡"
+              }
+            }
+          ]
+        },
+        {
+          "id": "1000000000004236103",
+          "type": 0,
+          "title": "Favourite car?",
+          "single_select": true,
+          "required": false,
+          "in_onboarding": false,
+          "options": [
+            {
+              "id": "1000000000004236131",
+              "title": "Ours",
+              "description": null,
+              "role_ids": [],
+              "channel_ids": [
+                "1000000000004233338"
+              ]
+            }
+          ]
+        }
+      ],
+      "default_channel_ids": [
+        "1000000000004233542",
+        "1000000000004233253",
+        "1000000000004233270",
+        "1000000000004233321",
+        "1000000000004233287"
+      ],
+      "enabled": true,
+      "mode": 0
+    },
+    "welcome_screen": {
+      "description": "The Formula Student team server.",
+      "welcome_channels": [
+        {
+          "channel_id": "1000000000004233253",
+          "description": "Read the rules",
+          "emoji_id": null,
+          "emoji_name": "📜"
+        },
+        {
+          "channel_id": "1000000000004233270",
+          "description": "Team news",
+          "emoji_id": null,
+          "emoji_name": "📣"
+        }
+      ],
+      "enabled": true
+    },
+    "guide": {
+      "enabled": true,
+      "welcome_message": {
+        "author_ids": [
+          "1000000000004232090"
+        ],
+        "message": "Welcome to Example Racing, [@username]!"
+      },
+      "new_member_actions": [
+        {
+          "channel_id": "1000000000004233253",
+          "action_type": 0,
+          "title": "Read the rules",
+          "description": "The short version: be kind.",
+          "emoji": {
+            "id": null,
+            "name": "📜"
+          },
+          "icon": null
+        },
+        {
+          "channel_id": "1000000000004233287",
+          "action_type": 1,
+          "title": "Introduce yourself",
+          "description": "Who are you, what do you study?",
+          "emoji": {
+            "id": null,
+            "name": "👋"
+          },
+          "icon": {
+            "id": "1000000000004236601",
+            "hash": "f00dfeedf00dfeed"
+          }
+        },
+        {
+          "channel_id": "1000000000004233338",
+          "action_type": 1,
+          "title": "Say hello",
+          "description": "",
+          "emoji": {
+            "id": "1000000000004236301",
+            "name": "fs_logo",
+            "animated": false
+          }
+        }
+      ],
+      "resource_channels": [
+        {
+          "channel_id": "1000000000004233780",
+          "title": "Interfaces",
+          "description": "Where subteams agree on boundaries",
+          "emoji": {
+            "id": null,
+            "name": "🔗"
+          }
+        }
+      ]
+    },
+    "verification": {
+      "version": "2024-05-01T12:00:00.000000+00:00",
+      "description": "Tell us a bit about yourself.",
+      "form_fields": [
+        {
+          "field_type": "TERMS",
+          "label": "Read and agree to the server rules",
+          "values": [
+            "Be respectful",
+            "No spam"
+          ],
+          "required": true,
+          "description": null,
+          "placeholder": null
+        },
+        {
+          "field_type": "TEXT_INPUT",
+          "label": "What's your name?",
+          "required": true,
+          "description": null,
+          "placeholder": "First and last name"
+        },
+        {
+          "field_type": "MULTIPLE_CHOICE",
+          "label": "Which year are you in?",
+          "choices": [
+            "1st",
+            "2nd",
+            "3rd",
+            "4th+"
+          ],
+          "required": true,
+          "description": null,
+          "placeholder": null
+        }
+      ]
+    },
+    "automod": [
+      {
+        "id": "1000000000004236201",
+        "name": "Block mention spam",
+        "event_type": 1,
+        "trigger_type": 5,
+        "trigger_metadata": {
+          "mention_total_limit": 10,
+          "mention_raid_protection_enabled": true
+        },
+        "actions": [
+          {
+            "type": 1,
+            "metadata": {}
+          },
+          {
+            "type": 3,
+            "metadata": {
+              "duration_seconds": 600
+            }
+          }
+        ],
+        "enabled": true,
+        "exempt_roles": [
+          "1000000000004233168"
+        ],
+        "exempt_channels": []
+      },
+      {
+        "id": "1000000000004236202",
+        "name": "Block slurs",
+        "event_type": 1,
+        "trigger_type": 4,
+        "trigger_metadata": {
+          "presets": [
+            3,
+            1
+          ],
+          "allow_list": []
+        },
+        "actions": [
+          {
+            "type": 1,
+            "metadata": {
+              "custom_message": "Please keep it civil."
+            }
+          }
+        ],
+        "enabled": true,
+        "exempt_roles": [],
+        "exempt_channels": []
+      },
+      {
+        "id": "1000000000004236203",
+        "name": "Banned words",
+        "event_type": 1,
+        "trigger_type": 1,
+        "trigger_metadata": {
+          "keyword_filter": [
+            "*scam*",
+            "free nitro"
+          ],
+          "regex_patterns": [],
+          "allow_list": []
+        },
+        "actions": [
+          {
+            "type": 2,
+            "metadata": {
+              "channel_id": "1000000000004233304"
+            }
+          },
+          {
+            "type": 1,
+            "metadata": {}
+          }
+        ],
+        "enabled": true,
+        "exempt_roles": [],
+        "exempt_channels": [
+          "1000000000004233304"
+        ]
+      },
+      {
+        "id": "1000000000004236204",
+        "name": "MEE6 filter",
+        "event_type": 1,
+        "trigger_type": 1,
+        "trigger_metadata": {
+          "keyword_filter": [
+            "spoiler"
+          ]
+        },
+        "actions": [
+          {
+            "type": 1,
+            "metadata": {}
+          }
+        ],
+        "enabled": false,
+        "exempt_roles": [],
+        "exempt_channels": []
+      }
+    ],
+    "emojis": [
+      {
+        "id": "1000000000004236301",
+        "name": "fs_logo",
+        "roles": [],
+        "managed": false
+      },
+      {
+        "id": "1000000000004236302",
+        "name": "old_logo",
+        "roles": [
+          "1000000000004233168"
+        ],
+        "managed": false
+      },
+      {
+        "id": "1000000000004236303",
+        "name": "twitch_hype",
+        "roles": [],
+        "managed": true
+      }
+    ],
+    "stickers": [
+      {
+        "id": "1000000000004236401",
+        "name": "Box Box",
+        "description": "Pit now",
+        "tags": "🛞"
+      }
+    ],
+    "sounds": [
+      {
+        "sound_id": "1000000000004236501",
+        "name": "Engine Rev",
+        "volume": 1,
+        "emoji_id": null,
+        "emoji_name": "🏎️"
+      }
+    ],
+    "widget": {
+      "enabled": false,
+      "channel_id": null
     }
   }
 }

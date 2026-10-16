@@ -827,6 +827,7 @@ impl Planner<'_, '_> {
             ));
         }
         if d.rules != l.rules {
+            let before = lines.len();
             for r in &d.rules {
                 if !l.rules.contains(r) {
                     lines.push(add(format!("rule {}", quoted(r))));
@@ -837,7 +838,7 @@ impl Planner<'_, '_> {
                     lines.push(remove(format!("rule {}", quoted(r))));
                 }
             }
-            if lines.is_empty() {
+            if lines.len() == before {
                 lines.push(change("rules reordered"));
             }
         }
@@ -963,6 +964,7 @@ impl Planner<'_, '_> {
     // -- expressions --------------------------------------------------------
 
     /// Match a desired expression to a live one: lockfile, then name.
+    #[allow(clippy::too_many_arguments)]
     fn match_expr<T>(
         &self,
         section: &std::collections::BTreeMap<String, crate::snowflake::Sf>,
@@ -1603,14 +1605,12 @@ fn automod_lines(l: &Automod<Ref, Ref>, a: &Automod<Ref, Ref>, refs: &Refs<'_>) 
             a.raid_protection.unwrap_or(false),
         ));
     }
-    let acts = |v: &[AutomodAction<Ref>]| {
-        v.iter()
-            .map(|x| action_label(x, refs))
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
-    if acts(&l.actions) != acts(&a.actions) {
-        lines.push(field_line("actions", acts(&l.actions), acts(&a.actions)));
+    let acts =
+        |v: &[AutomodAction<Ref>]| v.iter().map(|x| action_label(x, refs)).collect::<Vec<_>>();
+    let (before, after) = (acts(&l.actions), acts(&a.actions));
+    // Order doesn't matter to Discord.
+    if sorted(&before) != sorted(&after) {
+        lines.push(field_line("actions", before.join(", "), after.join(", ")));
     }
     if sorted(&l.exempt_roles) != sorted(&a.exempt_roles) {
         lines.push(field_line(

@@ -38,6 +38,7 @@ impl MemoryApi {
                     .flat_map(|c| c.available_tags.iter().flatten())
                     .filter_map(|t| t.id.map(|i| i.0)),
             )
+            .chain(snapshot.community.iter().flat_map(community_ids))
             .max()
             .unwrap_or(0);
         MemoryApi {
@@ -491,6 +492,20 @@ impl DiscordApi for MemoryApi {
         self.log.lock().unwrap().push(request.clone());
         self.apply(guild_id, request)
     }
+}
+
+/// IDs of server-wide objects, so new ones don't reuse them.
+fn community_ids(c: &crate::community::wire::WireCommunity) -> Vec<u64> {
+    let mut ids = Vec::new();
+    for p in c.onboarding.iter().flat_map(|o| &o.prompts) {
+        ids.push(p.id.0);
+        ids.extend(p.options.iter().map(|x| x.id.0));
+    }
+    ids.extend(c.automod.iter().flatten().map(|r| r.id.0));
+    ids.extend(c.emojis.iter().flatten().filter_map(|e| e.id.map(|i| i.0)));
+    ids.extend(c.stickers.iter().flatten().map(|s| s.id.0));
+    ids.extend(c.sounds.iter().flatten().map(|s| s.sound_id.0));
+    ids
 }
 
 fn to_value<T: Serialize>(v: &T) -> Value {

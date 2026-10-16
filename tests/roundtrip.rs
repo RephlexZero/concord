@@ -64,3 +64,55 @@ fn imported_lockfile_matches_the_server() {
         assert!(live.role(id.0).is_some(), "{key} → {id}");
     }
 }
+
+#[test]
+fn import_includes_server_wide_sections() {
+    let live = common::live_fixture("team_live.json");
+    let imported = import::import(&live);
+    let s = &imported.spec;
+
+    let server = s.server.as_ref().unwrap();
+    assert_eq!(server.rules_channel.as_deref(), Some("rules"));
+    assert_eq!(
+        server.safety_alerts_channel,
+        Some(Some("moderator-only".to_owned()))
+    );
+    assert!(server.widget.is_some());
+    let o = s.onboarding.as_ref().unwrap();
+    assert_eq!(o.prompts.len(), 3);
+    assert_eq!(o.default_channels.len(), 5);
+    assert_eq!(s.welcome_screen.as_ref().unwrap().channels.len(), 2);
+    let guide = s.guide.as_ref().unwrap();
+    assert_eq!((guide.actions.len(), guide.resources.len()), (3, 1));
+    let join = s.join_questions.as_ref().unwrap();
+    assert_eq!((join.rules.len(), join.questions.len()), (2, 2));
+    assert_eq!(s.automod.as_ref().unwrap().len(), 4);
+    let emoji: Vec<&str> = s
+        .emoji
+        .as_ref()
+        .unwrap()
+        .iter()
+        .map(|e| e.name.as_str())
+        .collect();
+    assert_eq!(emoji, ["fs_logo", "old_logo"], "managed emoji are left out");
+    assert_eq!(s.stickers.as_ref().unwrap().len(), 1);
+    assert_eq!(s.sounds.as_ref().unwrap().len(), 1);
+
+    // Every prompt and option, rule and expression is locked to its ID.
+    let lock = &imported.lock;
+    assert_eq!(lock.onboarding.len(), 3 + 6);
+    assert_eq!(lock.automod.len(), 4);
+    assert_eq!(lock.emoji.len(), 2);
+    let community = &live.community;
+    for id in lock.automod.values() {
+        assert!(community
+            .automod
+            .iter()
+            .flatten()
+            .any(|r| r.id == Some(id.0)));
+    }
+    assert!(imported
+        .warnings
+        .iter()
+        .any(|w| w.message.contains("by name only")));
+}

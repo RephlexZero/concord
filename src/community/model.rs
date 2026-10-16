@@ -24,6 +24,25 @@ pub struct Desired {
     pub sounds: Option<Vec<DesiredSound>>,
 }
 
+impl Desired {
+    /// Every role name these sections refer to.
+    pub fn role_names(&self) -> Vec<&str> {
+        let mut out: Vec<&str> = Vec::new();
+        for p in self.onboarding.iter().flat_map(|o| &o.prompts) {
+            for x in &p.options {
+                out.extend(x.roles.iter().map(String::as_str));
+            }
+        }
+        for r in self.automod.iter().flatten() {
+            out.extend(r.exempt_roles.iter().map(String::as_str));
+        }
+        for e in self.emoji.iter().flatten() {
+            out.extend(e.roles.iter().map(String::as_str));
+        }
+        out
+    }
+}
+
 /// What concord read from Discord. `None` for parts it couldn't read (the
 /// reason is in `errors`).
 #[derive(Debug, Clone, Default)]
