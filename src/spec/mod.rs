@@ -28,11 +28,19 @@ pub fn parse(text: &str) -> Result<SpecFile, Diagnostic> {
     if text.trim().is_empty() {
         return Err(Diagnostic::error("", "the spec file is empty"));
     }
-    let de = serde_yaml_ng::Deserializer::from_str(text);
-    serde_path_to_error::deserialize(de).map_err(|err| {
-        let path = err.path().to_string();
+    // serde-saphyr only lends its deserializer to a closure, so the path
+    // serde_path_to_error finds is passed out on the side.
+    let mut path = String::new();
+    let options = serde_saphyr::options! { with_snippet: false };
+    serde_saphyr::with_deserializer_from_str_with_options(text, options, |de| {
+        serde_path_to_error::deserialize(de).map_err(|err| {
+            path = err.path().to_string();
+            err.into_inner()
+        })
+    })
+    .map_err(|err| {
         let path = if path == "." { String::new() } else { path };
-        let message = strip_yaml_path(err.into_inner().to_string());
+        let message = strip_yaml_path(err.to_string());
         let hint = unknown_field_hint(&message);
         Diagnostic::error(path, message).with_hint_opt(hint)
     })
@@ -46,8 +54,8 @@ pub fn load(path: &Path) -> Result<SpecFile, SpecError> {
     parse(&text).map_err(SpecError::Parse)
 }
 
-/// serde_yaml_ng prefixes messages with its own (less precise) path; we
-/// already report the path separately.
+/// YAML errors may start with their own (less precise) path; we already
+/// report the path separately.
 fn strip_yaml_path(message: String) -> String {
     match message.split_once(": ") {
         Some((head, tail)) if !head.contains(' ') && !head.is_empty() => tail.to_owned(),
@@ -58,14 +66,15 @@ fn strip_yaml_path(message: String) -> String {
 fn unknown_field_hint(msg: &str) -> Option<String> {
     let rest = msg.strip_prefix("unknown field `")?;
     let (field, rest) = rest.split_once('`')?;
+    // "expected one of `a`, `b`" or "expected one of a, b at line 2, column 30"
     let expected = rest.split_once("expected ")?.1;
-    let candidates: Vec<&str> = expected
-        .split('`')
-        .enumerate()
-        .filter(|(i, _)| i % 2 == 1)
-        .map(|(_, s)| s)
-        .collect();
-    crate::diag::suggest(field, candidates.iter().copied())
+    let expected = expected.strip_prefix("one of ").unwrap_or(expected);
+    let expected = expected.split(" at line ").next().unwrap_or(expected);
+    let candidates = expected
+        .split([',', ' '])
+        .map(|s| s.trim_matches('`'))
+        .filter(|s| !s.is_empty() && *s != "or");
+    crate::diag::suggest(field, candidates)
 }
 
 #[cfg(test)]

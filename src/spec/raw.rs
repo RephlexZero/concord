@@ -381,9 +381,9 @@ pub struct Seconds(pub u32);
 impl Serialize for Seconds {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let v = self.0;
-        let text = if v != 0 && v % 3600 == 0 {
+        let text = if v != 0 && v.is_multiple_of(3600) {
             format!("{}h", v / 3600)
-        } else if v != 0 && v % 60 == 0 {
+        } else if v != 0 && v.is_multiple_of(60) {
             format!("{}m", v / 60)
         } else {
             format!("{v}s")

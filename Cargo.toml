@@ -2,10 +2,15 @@
 name = "concord"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.85"
-description = "Declarative, Terraform-style management of a Discord server's structure"
+rust-version = "1.89"
+description = "Manage a Discord server's roles, channels and permissions as code: plan, review, apply"
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/RephlexZero/concord"
+homepage = "https://github.com/RephlexZero/concord"
+keywords = ["discord", "infrastructure-as-code", "gitops", "cli", "terraform"]
+categories = ["command-line-utilities", "config"]
+exclude = [".github/", "action/", "action.yml", "deny.toml"]
 
 [dependencies]
 anyhow = "1"
@@ -17,14 +22,18 @@ owo-colors = "4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
-serde_yaml_ng = "0.10"
+serde-saphyr = "2"
 # twilight-http 0.17 enables no rustls crypto provider; pick ring (no C
 # toolchain needed beyond cc).
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "macros"] }
 twilight-http = "0.17"
-twilight-model = "0.17"
 
 [dev-dependencies]
 pretty_assertions = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

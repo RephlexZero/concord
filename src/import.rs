@@ -57,7 +57,7 @@ pub fn import(live: &LiveState) -> Imported {
 
 /// Serialise an imported spec, with a short header.
 pub fn to_yaml(spec: &SpecFile, guild_name: &str) -> String {
-    let body = serde_yaml_ng::to_string(spec).expect("spec serialises");
+    let body = serde_saphyr::to_string(spec).expect("spec serialises");
     format!(
         "# Imported from \"{guild_name}\" by `concord import`.\n\
          # Keys identify things (concord.lock.json maps them to Discord IDs);\n\
