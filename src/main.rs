@@ -257,10 +257,13 @@ fn read_snapshot(path: &Path, guild: u64) -> Result<Snapshot> {
 
 fn fetch(guild: u64, verbose: bool) -> Result<Snapshot> {
     let token = token()?;
-    let api = TwilightApi::new(token, verbose);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
+    // twilight's rate limiter spawns a task when the client is built, so the
+    // client must be created inside the runtime.
+    let _guard = runtime.enter();
+    let api = TwilightApi::new(token, verbose);
     Ok(runtime.block_on(api.snapshot(guild))?)
 }
 

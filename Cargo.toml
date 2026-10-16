@@ -17,6 +17,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
 serde_yaml_ng = "0.10"
+# twilight-http 0.17 enables no rustls crypto provider; pick ring (no C
+# toolchain needed beyond cc).
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 thiserror = "2"
 tokio = { version = "1", features = ["rt", "macros"] }
 twilight-http = "0.17"
