@@ -102,7 +102,7 @@ Server
       ~   title              "Which subteam?" → "Which subteams are you in?"
       ~   option "mech-inboard" → category mech-inboard 🔩  (was 🔩 "mech-inboard" → category mech-inboard 🔩)
       +   option "mech-outboard" → category mech-outboard 🛞
-      ~   option "powertrain" → category powertrain ⚙️  (was ⚙ "powertrain" → category powertrain ⚙️)
+      ~   option "powertrain" → category powertrain ⚙️  (was ⚙️ "powertrain" → category powertrain ⚙️)
       ~   option "elec" → category elec ⚡  (was ⚡ "elec" → category elec ⚡)
       +   option "systems" → category systems 🧩
       +   option "controls" → category controls 🎛️

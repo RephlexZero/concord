@@ -47,6 +47,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   keys.
 - Unmanaged AutoMod rules, emoji, stickers and sounds are listed in the plan
   and deleted only with `--prune`.
+- Unicode emoji are sent exactly as written, and compared without variation
+  selectors; previously the selector was stripped, which Discord can reject
+  (e.g. "⚖" for "⚖️").
+
+### Fixed
+
+- `--prune` no longer deletes live roles that the spec refers to by name
+  (in `private`, `overrides`, onboarding, AutoMod or emoji) without defining
+  them; they're listed as unmanaged with a note.
 
 ## [0.1.0] - 2026-10-16
 
