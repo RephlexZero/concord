@@ -319,15 +319,6 @@ impl MemoryApi {
                 c.welcome_screen = Some(w.clone());
                 Ok(to_value(&w))
             }
-            Endpoint::PutGuide => {
-                let g: WireGuide =
-                    serde_json::from_value(body.clone()).map_err(|e| bad(&e.to_string()))?;
-                if g.enabled && g.new_member_actions.len() < 3 {
-                    return Err(bad("The Server Guide needs at least 3 new member actions"));
-                }
-                c.guide = Some(g.clone());
-                Ok(to_value(&g))
-            }
             Endpoint::UpdateJoinQuestions => {
                 let current = c.verification.clone().unwrap_or_default();
                 let sent = body

@@ -91,10 +91,6 @@ pub enum CommunityOp {
         after: WelcomeScreen<Ref>,
         lines: Vec<Line>,
     },
-    Guide {
-        after: Guide<Ref>,
-        lines: Vec<Line>,
-    },
     JoinQuestions {
         /// Discord's form version, sent back to avoid clobbering edits.
         version: String,
@@ -804,7 +800,31 @@ impl Planner<'_, '_> {
             |i| (i.channel.clone(), i.title.clone()),
             item_label,
         );
-        self.op(CommunityOp::Guide { after, lines });
+        // Discord refuses bot tokens on this endpoint ("Bots cannot use this
+        // endpoint", 20001), so the differences are reported for a person to
+        // make instead of planned.
+        let steps: Vec<String> = lines
+            .iter()
+            .map(|l| {
+                let sign = match l.tone {
+                    LineTone::Add => '+',
+                    LineTone::Remove => '-',
+                    LineTone::Change => '~',
+                    LineTone::Note => ' ',
+                };
+                format!("    {sign} {}", l.text)
+            })
+            .collect();
+        self.diags.push(
+            Diagnostic::warning(
+                &d.path,
+                format!(
+                    "the Server Guide differs from the spec, and Discord doesn't let bots edit it:\n{}",
+                    steps.join("\n")
+                ),
+            )
+            .with_hint("make these changes in Server Settings → Onboarding → Server Guide"),
+        );
     }
 
     fn join(&mut self, d: &JoinQuestions) {

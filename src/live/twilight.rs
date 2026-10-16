@@ -192,11 +192,9 @@ fn route(guild_id: u64, endpoint: Endpoint) -> Option<Route<'static>> {
             guild_id,
             sticker_id,
         },
-        E::PutGuide
-        | E::UpdateJoinQuestions
-        | E::CreateSound
-        | E::UpdateSound(_)
-        | E::DeleteSound(_) => return None,
+        E::UpdateJoinQuestions | E::CreateSound | E::UpdateSound(_) | E::DeleteSound(_) => {
+            return None
+        }
     })
 }
 

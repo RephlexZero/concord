@@ -4,6 +4,15 @@ All notable changes to concord are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and concord adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-10-17
+
+### Changed
+
+- The Server Guide is check-only. Discord refuses bot tokens on its endpoint
+  ("Bots cannot use this endpoint"), so instead of planning a change that
+  would fail, the plan warns with the steps to make by hand. Join questions,
+  tested the same way, accept bot edits.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added
@@ -63,5 +72,6 @@ First release: roles, categories, text, announcement, forum and voice
 channels and their permissions from a YAML spec, with `validate`, `import`,
 `plan`, `apply`, `snapshot` and `lock`, and a GitHub Action.
 
+[0.2.1]: https://github.com/RephlexZero/concord/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/RephlexZero/concord/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RephlexZero/concord/releases/tag/v0.1.0

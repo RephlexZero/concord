@@ -114,9 +114,6 @@ Server
       - prompt "Favourite car?"
   ~ update   welcome screen
       + channel #wiki: "How we do things"
-  ~ update   Server Guide
-      ~ welcome message      "Welcome to Example Racing, [@username]!" → "Welcome to Example Racing, [@username]! Start with the to-do..."
-      + resource "Wiki" → #wiki
   ~ update   join questions
       + rule "Keep CAD and sponsor details inside the server"
       + question "Why do you want to join?" (paragraph)
@@ -131,5 +128,9 @@ Unmanaged (on Discord but not in the spec; left alone, --prune deletes them)
 
 warning categories.trackside: lockfile says `trackside` is 1000000000005232082, but that channel no longer exists
   hint: it will be created again
+warning guide: the Server Guide differs from the spec, and Discord doesn't let bots edit it:
+    ~ welcome message      "Welcome to Example Racing, [@username]!" → "Welcome to Example Racing, [@username]! Start with the to-do..."
+    + resource "Wiki" → #wiki
+  hint: make these changes in Server Settings → Onboarding → Server Guide
 
-Plan: 12 to create, 21 to update, 2 to reorder, 1 to adopt, 6 unmanaged.
+Plan: 12 to create, 20 to update, 2 to reorder, 1 to adopt, 6 unmanaged.

@@ -44,8 +44,6 @@ pub enum Endpoint {
     UpdateWidget,
     PutOnboarding,
     UpdateWelcomeScreen,
-    /// The Server Guide (undocumented).
-    PutGuide,
     /// Join questions (undocumented).
     UpdateJoinQuestions,
     CreateAutomod,
@@ -82,7 +80,6 @@ impl Endpoint {
             UpdateWidget => ("PATCH", format!("{g}/widget")),
             PutOnboarding => ("PUT", format!("{g}/onboarding")),
             UpdateWelcomeScreen => ("PATCH", format!("{g}/welcome-screen")),
-            PutGuide => ("PUT", format!("{g}/new-member-welcome")),
             UpdateJoinQuestions => ("PATCH", format!("{g}/member-verification")),
             CreateAutomod => ("POST", format!("{g}/auto-moderation/rules")),
             UpdateAutomod(id) => ("PATCH", format!("{g}/auto-moderation/rules/{id}")),

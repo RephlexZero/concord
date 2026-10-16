@@ -937,13 +937,30 @@ fn memory_api_checks_the_join_questions_version() {
 }
 
 #[test]
-fn memory_api_wants_three_guide_actions() {
-    let api = MemoryApi::new(snapshot(community(json!({}))));
-    let action =
-        json!({ "channel_id": "21", "action_type": 0, "title": "Read", "description": "" });
-    let body = |enabled: bool| json!({ "enabled": enabled, "new_member_actions": [action, action], "resource_channels": [] });
-    assert!(is_400(&write(&api, Endpoint::PutGuide, body(true))));
-    assert!(write(&api, Endpoint::PutGuide, body(false)).is_ok());
+fn guide_differences_are_a_warning_not_an_op() {
+    // Discord refuses bot tokens on the Server Guide endpoint.
+    let yaml = spec_with(
+        "guide:\n  actions:\n    - { title: Read the rules, channel: rules }\n    - { title: Say hi, channel: general, type: chat }\n    - { title: Read the mod notes, channel: mods }\n",
+    );
+    let p = plan_of(&yaml, &snapshot(community(json!({}))), &Lockfile::default());
+    assert!(community_ops(&p).is_empty(), "{:#?}", p.ops);
+    let w = diag(&p.diagnostics, "guide");
+    assert!(!w.is_error());
+    assert!(w.message.contains("+ to-do \"Say hi\""), "{}", w.message);
+    assert!(w
+        .hint
+        .as_deref()
+        .unwrap_or_default()
+        .contains("Server Guide"));
+
+    // Matching the live guide: no warning at all.
+    let same = spec_with("guide:\n  enabled: false\n");
+    let p = plan_of(&same, &snapshot(community(json!({}))), &Lockfile::default());
+    assert!(
+        p.diagnostics.iter().all(|d| d.path != "guide"),
+        "{:#?}",
+        p.diagnostics
+    );
 }
 
 #[test]

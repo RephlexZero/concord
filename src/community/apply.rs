@@ -44,17 +44,6 @@ fn emoji_fields(e: Option<&Emoji>) -> (Value, Value) {
     }
 }
 
-/// `{id, name}`, as onboarding responses and the Server Guide use.
-fn emoji_object(e: Option<&Emoji>) -> Value {
-    match e {
-        None => Value::Null,
-        Some(e) => {
-            let (id, name) = emoji_fields(Some(e));
-            json!({ "id": id, "name": name })
-        }
-    }
-}
-
 fn response_id(v: &Value, field: &str) -> Option<u64> {
     let id = v.get(field)?;
     id.as_str().and_then(|s| s.parse().ok()).or(id.as_u64())
@@ -126,46 +115,6 @@ impl Applier {
                     "welcome_channels": channels,
                 });
                 self.send(api, Endpoint::UpdateWelcomeScreen, body).await?;
-            }
-            C::Guide { after, .. } => {
-                let item = |i: &GuideItem<Ref>, action: bool| -> Result<Value, ApplyError> {
-                    let mut o = json!({
-                        "channel_id": self.channel_id(&i.channel)?.to_string(),
-                        "title": i.title,
-                        "description": i.description,
-                    });
-                    if action {
-                        o["action_type"] = json!(i.kind);
-                    }
-                    if i.emoji.is_some() {
-                        o["emoji"] = emoji_object(i.emoji.as_ref());
-                    }
-                    if let Some(icon) = &i.icon {
-                        o["icon"] = icon.clone();
-                    }
-                    Ok(o)
-                };
-                let actions = after
-                    .actions
-                    .iter()
-                    .map(|i| item(i, true))
-                    .collect::<Result<Vec<_>, _>>()?;
-                let resources = after
-                    .resources
-                    .iter()
-                    .map(|i| item(i, false))
-                    .collect::<Result<Vec<_>, _>>()?;
-                let (message, authors) = after.welcome.clone().unwrap_or_default();
-                let body = json!({
-                    "enabled": after.enabled,
-                    "welcome_message": {
-                        "author_ids": authors.iter().map(u64::to_string).collect::<Vec<_>>(),
-                        "message": message,
-                    },
-                    "new_member_actions": actions,
-                    "resource_channels": resources,
-                });
-                self.send(api, Endpoint::PutGuide, body).await?;
             }
             C::JoinQuestions { version, after, .. } => {
                 let mut fields = Vec::new();
@@ -468,7 +417,6 @@ pub fn describe(op: &CommunityOp) -> String {
         C::Widget { .. } => "update the server widget".to_owned(),
         C::Onboarding { .. } => "update onboarding".to_owned(),
         C::WelcomeScreen { .. } => "update the welcome screen".to_owned(),
-        C::Guide { .. } => "update the Server Guide".to_owned(),
         C::JoinQuestions { .. } => "update join questions".to_owned(),
         C::CreateAutomod { rule, .. } => format!("create AutoMod rule \"{}\"", rule.name),
         C::UpdateAutomod { rule, .. } => format!("update AutoMod rule \"{}\"", rule.name),

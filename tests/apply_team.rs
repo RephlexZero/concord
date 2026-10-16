@@ -223,15 +223,15 @@ fn server_wide_requests_keep_what_discord_already_has() {
             .unwrap_or_else(|| panic!("no {e:?} request"))
     };
 
-    // Images uploaded in the client stay on Server Guide to-dos.
-    let guide = body(Endpoint::PutGuide);
-    let intro = guide["new_member_actions"]
-        .as_array()
-        .unwrap()
+    // Discord refuses bots on the Server Guide endpoint, so nothing is sent
+    // there; differences are reported as a warning instead.
+    let (method, guide_path) = (
+        "PUT",
+        format!("guilds/{}/new-member-welcome", snapshot().guild.id.0),
+    );
+    assert!(log
         .iter()
-        .find(|a| a["title"] == "Introduce yourself")
-        .unwrap();
-    assert_eq!(intro["icon"]["hash"], "f00dfeedf00dfeed");
+        .all(|r| r.endpoint.method_path(snapshot().guild.id.0) != (method, guide_path.clone())));
 
     // Existing prompts and options keep their IDs, in the spec's order.
     let onboarding = body(Endpoint::PutOnboarding);

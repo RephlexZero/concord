@@ -682,10 +682,6 @@ fn community_op(out: &mut String, s: &Style, op: &crate::community::diff::Commun
             head(out, Tone::Change, "update", "welcome screen");
             community_lines(out, s, lines);
         }
-        C::Guide { lines, .. } => {
-            head(out, Tone::Change, "update", "Server Guide");
-            community_lines(out, s, lines);
-        }
         C::JoinQuestions { lines, .. } => {
             head(out, Tone::Change, "update", "join questions");
             community_lines(out, s, lines);

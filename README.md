@@ -386,8 +386,9 @@ Beyond roles and channels, a spec can have these top-level sections:
   says which and why; remove the section to leave it alone.
 - **Undocumented endpoints.** The Server Guide and join questions have no
   documented Discord API; concord uses the endpoints the Discord client
-  uses. They work today but may change without notice, so treat these two
-  sections as best-effort.
+  uses, so treat these two sections as best-effort. Discord lets bots edit
+  join questions, but **not the Server Guide**: concord reads it and the
+  plan shows any differences as a warning with the steps to make by hand.
 
 `import` writes every section it can read; the welcome screen and join
 questions only if they've been set up.
@@ -514,7 +515,11 @@ welcome_screen:
 
 #### Server Guide
 
-Best-effort: uses an undocumented endpoint.
+Check-only. Discord refuses bot tokens on the Server Guide's (undocumented)
+endpoint, so concord compares the guide with the spec and, if they differ,
+the plan shows a warning listing the changes to make in Server Settings →
+Onboarding → Server Guide. Nothing is sent, and it doesn't count as a pending
+change.
 
 ```yaml
 guide:
@@ -670,8 +675,9 @@ path relative to the spec.
   Discovery settings, gradient role colours (only the primary colour is set),
   image role icons, the server's icon and banner, turning Community on or
   off, and the moderator 2FA requirement (only the owner can change it).
-- The Server Guide and join questions use undocumented Discord endpoints and
-  may break when Discord changes them.
+- The Server Guide can only be checked, not changed: Discord doesn't let bots
+  edit it. Join questions use an undocumented endpoint and may break when
+  Discord changes it.
 - Emoji fields refer to custom emoji by ID (`id:<ID>`), not by their key in
   `emoji:`.
 - Roles at or above the bot's own role can't be changed (a Discord rule);
