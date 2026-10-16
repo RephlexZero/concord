@@ -767,16 +767,15 @@ impl Cx<'_> {
                 T::KeywordPreset if r.presets.is_empty() => {
                     self.err(&path, "needs `presets` (profanity, sexual_content, slurs)")
                 }
-                T::MentionSpam => {
+                T::MentionSpam
                     if !r
                         .mention_limit
-                        .is_some_and(|m| (1..=limits::MENTION_LIMIT).contains(&m))
-                    {
-                        self.err(
-                            format!("{path}.mention_limit"),
-                            "needs `mention_limit` between 1 and 50",
-                        );
-                    }
+                        .is_some_and(|m| (1..=limits::MENTION_LIMIT).contains(&m)) =>
+                {
+                    self.err(
+                        format!("{path}.mention_limit"),
+                        "needs `mention_limit` between 1 and 50",
+                    );
                 }
                 _ => {}
             }
