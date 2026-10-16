@@ -1,5 +1,5 @@
 //! The YAML spec: parsing ([`raw`]), and expansion of templates and tag sets
-//! into the flat [`Desired`](crate::model::Desired) model ([`expand`]).
+//! into the flat [`Desired`](crate::model::Desired) model ([`expand`](mod@expand)).
 
 pub mod expand;
 pub mod raw;

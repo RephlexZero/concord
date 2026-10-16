@@ -1,5 +1,5 @@
 //! Serde types for the YAML spec, exactly as written. Templates and tag sets
-//! are not expanded here; see [`super::expand`].
+//! are not expanded here; see [`super::expand`](mod@super::expand).
 
 use std::fmt;
 
