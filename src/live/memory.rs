@@ -220,6 +220,255 @@ impl MemoryApi {
                 }
                 Ok(to_value(&gone))
             }
+            other => self.community(&mut s, guild_id, other, &body, req.file.as_ref()),
+        }
+    }
+
+    /// Server-wide endpoints: settings, onboarding, AutoMod, expressions.
+    fn community(
+        &self,
+        s: &mut Snapshot,
+        guild_id: u64,
+        endpoint: Endpoint,
+        body: &Value,
+        file: Option<&crate::live::api::FilePart>,
+    ) -> Result<Value, ApiError> {
+        use crate::community::wire::*;
+        let (method, path) = endpoint.method_path(guild_id);
+        let bad = |message: &str| ApiError::Status {
+            status: 400,
+            method,
+            path: path.clone(),
+            message: message.to_owned(),
+        };
+        let not_found = || ApiError::Status {
+            status: 404,
+            method,
+            path: path.clone(),
+            message: "Unknown object".to_owned(),
+        };
+        let str_id = |v: &Value| -> Option<Sf> {
+            v.as_str()
+                .and_then(|s| s.parse().ok())
+                .or(v.as_u64())
+                .map(Sf)
+        };
+        let emoji_ref = |v: &Value| -> Option<WireEmojiRef> {
+            let id = v.get("emoji_id").and_then(str_id);
+            let name = v
+                .get("emoji_name")
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            (id.is_some() || name.is_some()).then_some(WireEmojiRef {
+                id,
+                name,
+                animated: None,
+            })
+        };
+        let channels = s.channels.clone();
+        let c = s.community.get_or_insert_with(WireCommunity::default);
+        match endpoint {
+            Endpoint::UpdateGuild => {
+                s.guild = merge(&s.guild, body);
+                Ok(to_value(&s.guild))
+            }
+            Endpoint::UpdateWidget => {
+                let w: WireWidget = merge(&c.widget.clone().unwrap_or_default(), body);
+                c.widget = Some(w.clone());
+                Ok(to_value(&w))
+            }
+            Endpoint::PutOnboarding => {
+                let mut o: WireOnboarding =
+                    serde_json::from_value(body.clone()).map_err(|e| bad(&e.to_string()))?;
+                // The body uses emoji_id/emoji_name; responses use `emoji`.
+                for (pi, p) in o.prompts.iter_mut().enumerate() {
+                    for (oi, x) in p.options.iter_mut().enumerate() {
+                        x.emoji = emoji_ref(&body["prompts"][pi]["options"][oi]);
+                        if x.role_ids.is_empty() && x.channel_ids.is_empty() {
+                            return Err(bad("Onboarding options need a role or a channel"));
+                        }
+                    }
+                }
+                // Discord: at least 7 default channels (a category counts
+                // its channels) for enabled onboarding.
+                let count: usize = o
+                    .default_channel_ids
+                    .iter()
+                    .map(|id| match channels.iter().find(|ch| ch.id == *id) {
+                        Some(ch) if ch.kind == 4 => {
+                            channels.iter().filter(|x| x.parent_id == Some(*id)).count()
+                        }
+                        _ => 1,
+                    })
+                    .sum();
+                if o.enabled && count < 7 {
+                    return Err(bad(
+                        "Onboarding requirements not met: too few default channels",
+                    ));
+                }
+                c.onboarding = Some(o.clone());
+                Ok(to_value(&o))
+            }
+            Endpoint::UpdateWelcomeScreen => {
+                let mut w: WireWelcomeScreen =
+                    merge(&c.welcome_screen.clone().unwrap_or_default(), body);
+                if let Some(enabled) = body.get("enabled").and_then(Value::as_bool) {
+                    w.enabled = enabled;
+                }
+                c.welcome_screen = Some(w.clone());
+                Ok(to_value(&w))
+            }
+            Endpoint::PutGuide => {
+                let g: WireGuide =
+                    serde_json::from_value(body.clone()).map_err(|e| bad(&e.to_string()))?;
+                if g.enabled && g.new_member_actions.len() < 3 {
+                    return Err(bad("The Server Guide needs at least 3 new member actions"));
+                }
+                c.guide = Some(g.clone());
+                Ok(to_value(&g))
+            }
+            Endpoint::UpdateJoinQuestions => {
+                let current = c.verification.clone().unwrap_or_default();
+                let sent = body
+                    .get("version")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned);
+                if current.version.is_some() && sent != current.version {
+                    return Err(bad("The form was changed elsewhere (version mismatch)"));
+                }
+                let mut v: WireVerification = merge(&current, body);
+                v.version = Some(format!("v{}", self.id()));
+                c.verification = Some(v.clone());
+                Ok(to_value(&v))
+            }
+            Endpoint::CreateAutomod => {
+                let mut r: WireAutomod = merge(
+                    &WireAutomod {
+                        id: Sf(self.id()),
+                        ..Default::default()
+                    },
+                    body,
+                );
+                r.id = Sf(self.id());
+                c.automod.get_or_insert_with(Vec::new).push(r.clone());
+                Ok(to_value(&r))
+            }
+            Endpoint::UpdateAutomod(id) => {
+                let rules = c.automod.get_or_insert_with(Vec::new);
+                let r = rules
+                    .iter_mut()
+                    .find(|r| r.id.0 == id)
+                    .ok_or_else(not_found)?;
+                if body.get("trigger_type").is_some() {
+                    return Err(bad("trigger_type can't be changed"));
+                }
+                *r = merge(&*r, body);
+                Ok(to_value(&*r))
+            }
+            Endpoint::CreateEmoji => {
+                if body
+                    .get("image")
+                    .and_then(Value::as_str)
+                    .is_none_or(|i| !i.starts_with("data:"))
+                {
+                    return Err(bad("image must be a data URI"));
+                }
+                let e = WireEmoji {
+                    id: Some(Sf(self.id())),
+                    name: body.get("name").and_then(Value::as_str).map(str::to_owned),
+                    roles: body
+                        .get("roles")
+                        .and_then(Value::as_array)
+                        .map(|v| v.iter().filter_map(str_id).collect())
+                        .unwrap_or_default(),
+                    managed: false,
+                };
+                c.emojis.get_or_insert_with(Vec::new).push(e.clone());
+                Ok(to_value(&e))
+            }
+            Endpoint::UpdateEmoji(id) => {
+                let list = c.emojis.get_or_insert_with(Vec::new);
+                let e = list
+                    .iter_mut()
+                    .find(|e| e.id == Some(Sf(id)))
+                    .ok_or_else(not_found)?;
+                *e = merge(&*e, body);
+                Ok(to_value(&*e))
+            }
+            Endpoint::CreateSticker => {
+                if file.is_none() {
+                    return Err(bad("stickers need a file"));
+                }
+                let st = WireSticker {
+                    id: Sf(self.id()),
+                    ..merge(
+                        &WireSticker {
+                            id: Sf(0),
+                            ..Default::default()
+                        },
+                        body,
+                    )
+                };
+                c.stickers.get_or_insert_with(Vec::new).push(st.clone());
+                Ok(to_value(&st))
+            }
+            Endpoint::UpdateSticker(id) => {
+                let list = c.stickers.get_or_insert_with(Vec::new);
+                let st = list
+                    .iter_mut()
+                    .find(|x| x.id.0 == id)
+                    .ok_or_else(not_found)?;
+                *st = merge(&*st, body);
+                Ok(to_value(&*st))
+            }
+            Endpoint::CreateSound => {
+                let snd = WireSound {
+                    sound_id: Sf(self.id()),
+                    ..merge(
+                        &WireSound {
+                            sound_id: Sf(0),
+                            volume: 1.0,
+                            ..Default::default()
+                        },
+                        body,
+                    )
+                };
+                c.sounds.get_or_insert_with(Vec::new).push(snd.clone());
+                Ok(to_value(&snd))
+            }
+            Endpoint::UpdateSound(id) => {
+                let list = c.sounds.get_or_insert_with(Vec::new);
+                let snd = list
+                    .iter_mut()
+                    .find(|x| x.sound_id.0 == id)
+                    .ok_or_else(not_found)?;
+                *snd = merge(&*snd, body);
+                Ok(to_value(&*snd))
+            }
+            Endpoint::DeleteAutomod(id) => {
+                let list = c.automod.get_or_insert_with(Vec::new);
+                list.retain(|x| x.id.0 != id);
+                Ok(Value::Null)
+            }
+            Endpoint::DeleteEmoji(id) => {
+                c.emojis
+                    .get_or_insert_with(Vec::new)
+                    .retain(|x| x.id != Some(Sf(id)));
+                Ok(Value::Null)
+            }
+            Endpoint::DeleteSticker(id) => {
+                c.stickers
+                    .get_or_insert_with(Vec::new)
+                    .retain(|x| x.id.0 != id);
+                Ok(Value::Null)
+            }
+            Endpoint::DeleteSound(id) => {
+                c.sounds
+                    .get_or_insert_with(Vec::new)
+                    .retain(|x| x.sound_id.0 != id);
+                Ok(Value::Null)
+            }
+            _ => unreachable!("role and channel endpoints are handled above"),
         }
     }
 
@@ -304,6 +553,7 @@ mod tests {
         let req = WriteRequest {
             endpoint: Endpoint::UpdateChannel(5),
             body: Some(json!({ "name": "renamed", "available_tags": [{ "name": "Open" }] })),
+            file: None,
         };
         let out = api.apply(1, &req).unwrap();
         assert_eq!(out["name"], "renamed");

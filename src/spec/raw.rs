@@ -7,6 +7,10 @@ use indexmap::IndexMap;
 use serde::de::{self, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use super::community::{
+    AutomodSpec, EmojiSpec, GuideSpec, JoinQuestionsSpec, OnboardingSpec, ServerSpec, SoundSpec,
+    StickerSpec, TemplateOptionSpec, VideoQuality, WelcomeScreenSpec,
+};
 use crate::model::{ChannelKind, Layout, Mode, Sort};
 use crate::snowflake::Sf;
 
@@ -17,6 +21,9 @@ pub struct SpecFile {
     pub guild_id: Option<Sf>,
     #[serde(default, skip_serializing_if = "Settings::is_default")]
     pub concord: Settings,
+    /// Server settings; fields left out are left alone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server: Option<ServerSpec>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub tag_sets: IndexMap<String, Vec<TagEntry>>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
@@ -30,6 +37,25 @@ pub struct SpecFile {
     pub channels: Vec<ChannelSpec>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub categories: IndexMap<String, CategorySpec>,
+
+    // Each section below is managed as a whole when present, and left alone
+    // when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub onboarding: Option<OnboardingSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub welcome_screen: Option<WelcomeScreenSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guide: Option<GuideSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub join_questions: Option<JoinQuestionsSpec>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub automod: Option<Vec<AutomodSpec>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub emoji: Option<Vec<EmojiSpec>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stickers: Option<Vec<StickerSpec>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sounds: Option<Vec<SoundSpec>>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,6 +84,10 @@ pub struct RoleSpec {
     pub mentionable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permissions: Option<Vec<String>>,
+    /// A unicode emoji shown next to members' names (needs boost level 2).
+    /// `""` removes it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -69,6 +99,9 @@ pub struct Template {
     pub private: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub overrides: Option<IndexMap<String, OverrideSpec>>,
+    /// An onboarding option for each category made from this template.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub onboarding_option: Option<TemplateOptionSpec>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -86,6 +119,9 @@ pub struct CategorySpec {
     /// Channels in this category, after any from the template.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub channels: Vec<ChannelSpec>,
+    /// An onboarding option for this category (replaces the template's).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub onboarding_option: Option<TemplateOptionSpec>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,6 +144,14 @@ pub struct ChannelSpec {
     pub bitrate: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_limit: Option<u32>,
+    /// Voice region, e.g. `rotterdam`; `""` for automatic.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub region: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub video_quality: Option<VideoQuality>,
+    /// Forum and media: slowmode inside each post.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub post_slowmode: Option<Seconds>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<TagEntry>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -143,6 +187,9 @@ impl ChannelSpec {
             slowmode: None,
             bitrate: None,
             user_limit: None,
+            region: None,
+            video_quality: None,
+            post_slowmode: None,
             tags: None,
             require_tag: None,
             layout: None,

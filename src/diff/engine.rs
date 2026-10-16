@@ -71,6 +71,7 @@ pub fn plan(desired: &Desired, live: &LiveState, lock: &Lockfile, opts: &PlanOpt
         e.ops.reorder_channels.push(Op::ReorderChannels(groups));
     }
     e.unmanaged_and_prune();
+    e.community();
 
     let ops = e.ops.into_vec();
     let mut diags = e.diags;
@@ -98,6 +99,7 @@ struct Ops {
     overwrites: Vec<Op>,
     reorder_channels: Vec<Op>,
     reorder_roles: Vec<Op>,
+    community: Vec<Op>,
     deletes: Vec<Op>,
 }
 
@@ -114,6 +116,7 @@ impl Ops {
             self.overwrites,
             self.reorder_channels,
             self.reorder_roles,
+            self.community,
             self.deletes,
         ]
         .into_iter()
@@ -249,6 +252,26 @@ impl Engine<'_> {
             }
             if let Some(p) = r.permissions {
                 changes.extend(Change::of(&lr.permissions, &p).map(RoleField::Permissions));
+            }
+            if let Some(icon) = &r.icon {
+                // Compare without variation selectors; send what the spec says.
+                let norm = |i: &Option<String>| i.as_deref().map(crate::model::Emoji::unicode);
+                if norm(icon) != norm(&lr.icon) {
+                    if icon.is_some() && !self.live.guild.features.iter().any(|f| f == "ROLE_ICONS")
+                    {
+                        self.diags.push(
+                            Diagnostic::error(
+                                format!("{}.icon", r.path),
+                                "role icons need boost level 2 (the ROLE_ICONS feature)",
+                            )
+                            .with_hint("remove `icon:`, or boost the server"),
+                        );
+                    }
+                    changes.push(RoleField::Icon(Change {
+                        before: lr.icon.clone(),
+                        after: icon.clone(),
+                    }));
+                }
             }
             if changes.is_empty() {
                 continue;
@@ -389,6 +412,9 @@ impl Engine<'_> {
             slowmode: c.slowmode,
             bitrate: c.bitrate,
             user_limit: c.user_limit,
+            region: c.region.clone(),
+            video_quality: c.video_quality,
+            post_slowmode: c.forum.post_slowmode,
             require_tag: c.forum.require_tag,
             layout: c.forum.layout,
             sort: c.forum.sort,
@@ -471,6 +497,9 @@ impl Engine<'_> {
             DefaultReaction
         );
         cmp!(c.forum.auto_archive, lc.forum.auto_archive, AutoArchive);
+        cmp!(c.region, lc.region, Region);
+        cmp!(c.video_quality, lc.video_quality, VideoQuality);
+        cmp!(c.forum.post_slowmode, lc.forum.post_slowmode, PostSlowmode);
         if !changes.is_empty() {
             self.ops
                 .update_channels
@@ -549,6 +578,64 @@ impl Engine<'_> {
                     }));
             }
         }
+    }
+
+    // -- server-wide configuration -------------------------------------------
+
+    fn channel_label(kind: crate::model::LiveKind, name: &str) -> String {
+        match kind.known() {
+            Some(ChannelKind::Category) => format!("category {name}"),
+            Some(k) if k.is_voice_like() => format!("🔊{name}"),
+            _ => format!("#{name}"),
+        }
+    }
+
+    fn community(&mut self) {
+        use crate::community::diff::{plan, Inputs, Refs};
+        let mut labels = std::collections::HashMap::new();
+        for lc in &self.live.channels {
+            labels.insert(Ref::Id(lc.id), Self::channel_label(lc.kind, &lc.name));
+        }
+        for lr in &self.live.roles {
+            let name = if lr.id == self.live.guild.id {
+                EVERYONE.to_owned()
+            } else {
+                format!("@{}", lr.name)
+            };
+            labels.insert(Ref::Id(lr.id), name);
+        }
+        let mut channels = std::collections::HashMap::new();
+        for c in &self.desired.channels {
+            let r = self.channel_ref(&c.key);
+            labels.insert(
+                r.clone(),
+                Self::channel_label(crate::model::LiveKind::Known(c.kind), &c.name),
+            );
+            channels.insert(c.key.clone(), r);
+        }
+        for r in &self.desired.roles {
+            if !r.everyone {
+                labels.insert(self.role_ref_of_key(&r.key), format!("@{}", r.name));
+            }
+        }
+        let refs = Refs {
+            roles: &self.role_refs,
+            channels,
+            labels,
+        };
+        let input = Inputs {
+            desired: &self.desired.community,
+            live: &self.live.community,
+            lock: self.lock,
+            refs: &refs,
+            prune: self.opts.prune,
+            features: &self.live.guild.features,
+        };
+        let out = plan(&input, &mut self.diags);
+        self.ops.community.extend(out.ops);
+        self.bindings.community.extend(out.bindings);
+        self.bindings.assets.extend(out.assets);
+        self.unmanaged.extend(out.unmanaged);
     }
 
     // -- things the spec doesn't mention -----------------------------------

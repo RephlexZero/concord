@@ -61,6 +61,8 @@ pub fn run(ops: &[Op], desired: &Desired, live: &LiveState, diags: &mut Vec<Diag
 
     let mut needs_roles = false;
     let mut needs_channels = false;
+    let mut needs_guild = false;
+    let mut needs_expressions = false;
     for op in ops {
         match op {
             Op::UpdateRole(u) => {
@@ -135,6 +137,21 @@ pub fn run(ops: &[Op], desired: &Desired, live: &LiveState, diags: &mut Vec<Diag
                 needs_channels = true;
             }
             Op::Adopt { .. } => {}
+            Op::Community(c) => {
+                use crate::community::diff::CommunityOp as C;
+                match c {
+                    C::CreateEmoji { .. }
+                    | C::UpdateEmoji { .. }
+                    | C::DeleteEmoji { .. }
+                    | C::CreateSticker { .. }
+                    | C::UpdateSticker { .. }
+                    | C::DeleteSticker { .. }
+                    | C::CreateSound { .. }
+                    | C::UpdateSound { .. }
+                    | C::DeleteSound { .. } => needs_expressions = true,
+                    _ => needs_guild = true,
+                }
+            }
         }
     }
 
@@ -142,6 +159,12 @@ pub fn run(ops: &[Op], desired: &Desired, live: &LiveState, diags: &mut Vec<Diag
         for (needed, flag, what) in [
             (needs_roles, Perms::MANAGE_ROLES, "MANAGE_ROLES"),
             (needs_channels, Perms::MANAGE_CHANNELS, "MANAGE_CHANNELS"),
+            (needs_guild, Perms(1 << 5), "MANAGE_GUILD"),
+            (
+                needs_expressions,
+                Perms(1 << 30),
+                "MANAGE_GUILD_EXPRESSIONS",
+            ),
         ] {
             if needed && !perms.contains(flag) {
                 diags.push(

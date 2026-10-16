@@ -24,6 +24,20 @@ pub struct Lockfile {
     /// Forum tags, keyed `<channel key>/<tag key>`.
     #[serde(default)]
     pub tags: BTreeMap<String, Sf>,
+    /// Onboarding prompts (`<prompt>`) and options (`<prompt>/<option>`).
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub onboarding: BTreeMap<String, Sf>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub automod: BTreeMap<String, Sf>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub emoji: BTreeMap<String, Sf>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub stickers: BTreeMap<String, Sf>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub sounds: BTreeMap<String, Sf>,
+    /// SHA-256 of each uploaded file (`emoji/<key>`, ...), to notice changes.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub assets: BTreeMap<String, String>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -58,6 +72,17 @@ pub fn tag_key(channel_key: &str, tag_key: &str) -> String {
 }
 
 impl Lockfile {
+    pub fn section_mut(&mut self, section: crate::diff::LockSection) -> &mut BTreeMap<String, Sf> {
+        use crate::diff::LockSection as S;
+        match section {
+            S::Onboarding => &mut self.onboarding,
+            S::Automod => &mut self.automod,
+            S::Emoji => &mut self.emoji,
+            S::Sticker => &mut self.stickers,
+            S::Sound => &mut self.sounds,
+        }
+    }
+
     pub fn new(guild_id: u64) -> Self {
         Lockfile {
             version: LOCK_VERSION,
@@ -113,7 +138,14 @@ impl Lockfile {
 
     /// Rename a key (after refactoring the spec), including a channel's tags.
     pub fn mv(&mut self, from: &str, to: &str) -> Result<&'static str, LockError> {
-        for (kind, map) in [("role", &mut self.roles), ("channel", &mut self.channels)] {
+        for (kind, map) in [
+            ("role", &mut self.roles),
+            ("channel", &mut self.channels),
+            ("AutoMod rule", &mut self.automod),
+            ("emoji", &mut self.emoji),
+            ("sticker", &mut self.stickers),
+            ("sound", &mut self.sounds),
+        ] {
             if let Some(id) = map.get(from).copied() {
                 if map.contains_key(to) {
                     return Err(LockError::KeyExists(to.to_owned()));
@@ -131,6 +163,17 @@ impl Lockfile {
                     for (k, v) in moved {
                         self.tags.remove(&k);
                         self.tags.insert(format!("{to}/{}", &k[prefix.len()..]), v);
+                    }
+                }
+                let section = match kind {
+                    "emoji" => Some("emoji"),
+                    "sticker" => Some("stickers"),
+                    "sound" => Some("sounds"),
+                    _ => None,
+                };
+                if let Some(s) = section {
+                    if let Some(hash) = self.assets.remove(&format!("{s}/{from}")) {
+                        self.assets.insert(format!("{s}/{to}"), hash);
                     }
                 }
                 return Ok(kind);

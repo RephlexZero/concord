@@ -32,8 +32,8 @@ pub enum ApplyError {
 
 /// Runs a plan's ops and tracks the IDs they create.
 pub struct Applier {
-    guild_id: u64,
-    lock: Lockfile,
+    pub(crate) guild_id: u64,
+    pub(crate) lock: Lockfile,
     roles: HashMap<String, u64>,
     channels: HashMap<String, u64>,
     /// Forums whose tags this plan sets later on.
@@ -55,6 +55,10 @@ impl Applier {
             .map(|(k, id)| (k.clone(), Sf(*id)))
             .collect();
         lock.tags = b.tags.iter().map(|(k, id)| (k.clone(), Sf(*id))).collect();
+        for (section, key, id) in &b.community {
+            lock.section_mut(*section).insert(key.clone(), Sf(*id));
+        }
+        lock.assets = b.assets.iter().cloned().collect();
         Applier {
             guild_id: plan.guild_id,
             lock,
@@ -164,6 +168,7 @@ impl Applier {
                     .await?;
                 Ok(())
             }
+            Op::Community(c) => self.community(api, c).await,
             Op::Delete { kind, id, .. } => {
                 let endpoint = match kind {
                     EntityKind::Role => Endpoint::DeleteRole(*id),
@@ -172,6 +177,7 @@ impl Applier {
                 let req = WriteRequest {
                     endpoint,
                     body: None,
+                    file: None,
                 };
                 api.write(self.guild_id, &req).await?;
                 self.forget(*id);
@@ -180,7 +186,7 @@ impl Applier {
         }
     }
 
-    async fn send<A: DiscordApi>(
+    pub(crate) async fn send<A: DiscordApi>(
         &self,
         api: &A,
         endpoint: Endpoint,
@@ -189,6 +195,7 @@ impl Applier {
         let req = WriteRequest {
             endpoint,
             body: Some(body),
+            file: None,
         };
         Ok(api.write(self.guild_id, &req).await?)
     }
@@ -223,7 +230,7 @@ impl Applier {
         Ok(())
     }
 
-    fn role_id(&self, r: &Ref) -> Result<u64, ApplyError> {
+    pub(crate) fn role_id(&self, r: &Ref) -> Result<u64, ApplyError> {
         match r {
             Ref::Id(id) => Ok(*id),
             Ref::New(key) => self
@@ -236,7 +243,7 @@ impl Applier {
 
     // -- channels --------------------------------------------------------
 
-    fn channel_id(&self, r: &Ref) -> Result<u64, ApplyError> {
+    pub(crate) fn channel_id(&self, r: &Ref) -> Result<u64, ApplyError> {
         match r {
             Ref::Id(id) => Ok(*id),
             Ref::New(key) => self
@@ -274,17 +281,34 @@ impl Applier {
         opt(&mut b, "rate_limit_per_user", c.slowmode.map(|v| json!(v)));
         opt(&mut b, "bitrate", c.bitrate.map(|v| json!(v)));
         opt(&mut b, "user_limit", c.user_limit.map(|v| json!(v)));
+        if c.kind.is_voice_like() {
+            opt(&mut b, "rtc_region", c.region.as_ref().map(|r| json!(r)));
+            opt(
+                &mut b,
+                "video_quality_mode",
+                c.video_quality.map(|v| json!(v)),
+            );
+        }
         opt(
             &mut b,
             "default_auto_archive_duration",
             c.auto_archive.map(|v| json!(v)),
         );
+        if c.kind.is_forum_like() {
+            opt(
+                &mut b,
+                "default_thread_rate_limit_per_user",
+                c.post_slowmode.map(|v| json!(v)),
+            );
+        }
         if c.kind == ChannelKind::Forum {
             opt(
                 &mut b,
                 "default_forum_layout",
                 c.layout.map(|l| json!(l.wire())),
             );
+        }
+        if c.kind.is_forum_like() {
             opt(
                 &mut b,
                 "default_sort_order",
@@ -356,6 +380,11 @@ impl Applier {
                     ("default_reaction_emoji", reaction_json(&c.after))
                 }
                 ChannelField::AutoArchive(c) => ("default_auto_archive_duration", json!(c.after)),
+                ChannelField::Region(c) => ("rtc_region", json!(c.after)),
+                ChannelField::VideoQuality(c) => ("video_quality_mode", json!(c.after)),
+                ChannelField::PostSlowmode(c) => {
+                    ("default_thread_rate_limit_per_user", json!(c.after))
+                }
             };
             b.insert(k.into(), v);
         }
@@ -433,7 +462,15 @@ impl Applier {
     }
 
     /// Drop lockfile entries pointing at a deleted object.
-    fn forget(&mut self, id: u64) {
+    pub(crate) fn forget(&mut self, id: u64) {
+        for map in [
+            &mut self.lock.automod,
+            &mut self.lock.emoji,
+            &mut self.lock.stickers,
+            &mut self.lock.sounds,
+        ] {
+            map.retain(|_, v| v.0 != id);
+        }
         let keys: Vec<String> = self
             .lock
             .channels
@@ -459,6 +496,7 @@ fn role_patch(u: &UpdateRole) -> Value {
             RoleField::Hoist(c) => ("hoist", json!(c.after)),
             RoleField::Mentionable(c) => ("mentionable", json!(c.after)),
             RoleField::Permissions(c) => ("permissions", json!(c.after.bits().to_string())),
+            RoleField::Icon(c) => ("unicode_emoji", json!(c.after)),
         };
         b.insert(k.into(), v);
     }
@@ -534,6 +572,7 @@ pub fn describe(op: &Op) -> String {
         },
         Op::ReorderChannels(g) => format!("reorder channels ({} group(s))", g.len()),
         Op::ReorderRoles(_) => "reorder roles".to_owned(),
+        Op::Community(c) => crate::community::apply::describe(c),
         Op::Delete { kind, name, .. } => match kind {
             EntityKind::Role => format!("delete role @{name}"),
             EntityKind::Category => format!("delete category {name}"),

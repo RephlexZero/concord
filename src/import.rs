@@ -38,17 +38,40 @@ pub fn import(live: &LiveState) -> Imported {
     };
     let roles = im.roles();
     let (channels, categories) = im.channels();
+    let channel_keys = im
+        .lock
+        .channels
+        .iter()
+        .map(|(k, v)| (v.0, k.clone()))
+        .collect();
+    let sections = crate::community::import::Importer {
+        live,
+        channel_keys,
+        role_names: &im.role_names,
+        lock: &mut im.lock,
+        warnings: &mut im.warnings,
+    }
+    .import();
     Imported {
         spec: SpecFile {
             guild_id: Some(Sf(live.guild.id)),
             concord: Settings {
                 mode: Mode::Authoritative,
             },
+            server: sections.server,
             tag_sets: IndexMap::new(),
             templates: IndexMap::new(),
             roles,
             channels,
             categories,
+            onboarding: sections.onboarding,
+            welcome_screen: sections.welcome_screen,
+            guide: sections.guide,
+            join_questions: sections.join_questions,
+            automod: sections.automod,
+            emoji: sections.emoji,
+            stickers: sections.stickers,
+            sounds: sections.sounds,
         },
         lock: im.lock,
         warnings: im.warnings,
@@ -119,6 +142,7 @@ impl Importer<'_> {
                 mentionable: r.mentionable.then_some(true),
                 permissions: (!r.permissions.is_empty())
                     .then(|| names(r.permissions, PermContext::Role)),
+                icon: r.icon.clone(),
             });
         }
         if let Some(everyone) = live.role(live.guild.id) {
@@ -129,6 +153,7 @@ impl Importer<'_> {
                 hoist: None,
                 mentionable: None,
                 permissions: Some(names(everyone.permissions, PermContext::Role)),
+                icon: None,
             });
         }
         self.role_names.insert(live.guild.id, EVERYONE.to_owned());
@@ -186,6 +211,7 @@ impl Importer<'_> {
                     .iter()
                     .map(|c| self.channel(c, Some(cat)))
                     .collect(),
+                onboarding_option: None,
             };
             categories.insert(key, spec);
         }
@@ -200,24 +226,31 @@ impl Importer<'_> {
 
         let mut s = ChannelSpec::new(key.clone(), kind, c.name.clone());
         let topic = (!c.topic.is_empty()).then(|| c.topic.clone());
-        if kind == ChannelKind::Forum {
+        if kind.is_forum_like() {
             s.guidelines = topic;
-        } else {
+        } else if !kind.is_voice_like() {
             s.topic = topic;
         }
         s.nsfw = c.nsfw.then_some(true);
         s.slowmode = (c.slowmode > 0).then_some(Seconds(c.slowmode));
-        if kind == ChannelKind::Voice {
+        if kind.is_voice_like() {
             s.bitrate = (c.bitrate != DEFAULT_BITRATE).then_some(c.bitrate);
             s.user_limit = (c.user_limit > 0).then_some(c.user_limit);
+            s.region = c.region.clone();
+            if kind == ChannelKind::Voice && c.video_quality == 2 {
+                s.video_quality = Some(crate::spec::community::VideoQuality::Full);
+            }
         } else {
             s.slowmode = s.slowmode.filter(|_| kind != ChannelKind::Announcement);
         }
-        if kind != ChannelKind::Voice {
+        if !kind.is_voice_like() {
             s.auto_archive = (c.forum.auto_archive != DEFAULT_AUTO_ARCHIVE)
                 .then_some(ArchiveDuration(c.forum.auto_archive));
         }
-        if kind == ChannelKind::Forum {
+        if kind.is_forum_like() {
+            s.post_slowmode = (c.forum.post_slowmode > 0).then_some(Seconds(c.forum.post_slowmode));
+        }
+        if kind.is_forum_like() {
             let f = &c.forum;
             if !f.tags.is_empty() {
                 s.tags = Some(
@@ -240,7 +273,8 @@ impl Importer<'_> {
                 );
             }
             s.require_tag = f.require_tag.then_some(true);
-            s.layout = (f.layout != Default::default()).then_some(f.layout);
+            s.layout =
+                (kind == ChannelKind::Forum && f.layout != Default::default()).then_some(f.layout);
             s.sort = (f.sort != Default::default()).then_some(f.sort);
             s.default_reaction = f.default_reaction.as_ref().map(|e| e.to_spec());
         }

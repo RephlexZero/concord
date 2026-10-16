@@ -95,6 +95,20 @@ pub struct Bindings {
     pub roles: Vec<(String, u64)>,
     pub channels: Vec<(String, u64)>,
     pub tags: Vec<(String, u64)>,
+    /// Onboarding prompts and options, AutoMod rules, expressions.
+    pub community: Vec<(LockSection, String, u64)>,
+    /// `<section>/<key>` → SHA-256 of an uploaded file.
+    pub assets: Vec<(String, String)>,
+}
+
+/// Lockfile sections for server-wide objects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LockSection {
+    Onboarding,
+    Automod,
+    Emoji,
+    Sticker,
+    Sound,
 }
 
 impl Plan {
@@ -123,6 +137,8 @@ pub enum Op {
     SetPermissionOverwrites(SetOverwrites),
     ReorderChannels(Vec<ReorderGroup>),
     ReorderRoles(ReorderRoles),
+    /// Server settings, onboarding, AutoMod, expressions...
+    Community(crate::community::diff::CommunityOp),
     Delete {
         kind: EntityKind,
         id: u64,
@@ -157,6 +173,7 @@ pub enum RoleField {
     Hoist(Change<bool>),
     Mentionable(Change<bool>),
     Permissions(Change<Perms>),
+    Icon(Change<Option<String>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -176,6 +193,9 @@ pub struct CreateChannel {
     pub slowmode: Option<u32>,
     pub bitrate: Option<u32>,
     pub user_limit: Option<u32>,
+    pub region: Option<Option<String>>,
+    pub video_quality: Option<u8>,
+    pub post_slowmode: Option<u32>,
     pub require_tag: Option<bool>,
     pub layout: Option<Layout>,
     pub sort: Option<Sort>,
@@ -209,6 +229,9 @@ pub enum ChannelField {
     Slowmode(Change<u32>),
     Bitrate(Change<u32>),
     UserLimit(Change<u32>),
+    Region(Change<Option<String>>),
+    VideoQuality(Change<u8>),
+    PostSlowmode(Change<u32>),
     RequireTag(Change<bool>),
     Layout(Change<Layout>),
     Sort(Change<Sort>),
@@ -318,4 +341,8 @@ pub enum UnmanagedKind {
     Tag {
         forum: String,
     },
+    Automod,
+    Emoji,
+    Sticker,
+    Sound,
 }

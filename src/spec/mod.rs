@@ -1,12 +1,13 @@
 //! The YAML spec: parsing ([`raw`]), and expansion of templates and tag sets
 //! into the flat [`Desired`](crate::model::Desired) model ([`expand`](mod@expand)).
 
+pub mod community;
 pub mod expand;
 pub mod raw;
 
 use std::path::Path;
 
-pub use expand::expand;
+pub use expand::{expand, expand_at};
 pub use raw::SpecFile;
 
 use crate::diag::Diagnostic;

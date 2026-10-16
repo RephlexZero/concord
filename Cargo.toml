@@ -23,6 +23,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_path_to_error = "0.1"
 serde-saphyr = "2"
+base64 = "0.23"
+ring = "0.17"
 # twilight-http 0.17 enables no rustls crypto provider; pick ring (no C
 # toolchain needed beyond cc).
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }

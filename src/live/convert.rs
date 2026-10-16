@@ -27,6 +27,7 @@ pub fn to_live(snap: &Snapshot) -> LiveState {
             id: g.id.0,
             name: g.name.clone(),
             owner_id: g.owner_id.map(|o| o.0),
+            features: g.features.clone(),
             protected_channels: protected,
         },
         roles: snap.roles.iter().map(role).collect(),
@@ -35,6 +36,7 @@ pub fn to_live(snap: &Snapshot) -> LiveState {
             user_id: b.user.id.0,
             role_ids: b.member.roles.iter().map(|r| r.0).collect(),
         }),
+        community: crate::community::convert::live(g, snap.community.as_ref()),
     }
 }
 
@@ -53,6 +55,7 @@ fn role(r: &WireRole) -> LiveRole {
         permissions: Perms::from_wire(&r.permissions).unwrap_or_default(),
         position: r.position,
         managed: r.managed,
+        icon: r.unicode_emoji.clone().filter(|e| !e.is_empty()),
     }
 }
 
@@ -85,6 +88,8 @@ fn channel(c: &WireChannel) -> LiveChannel {
         slowmode: c.rate_limit_per_user.unwrap_or(0),
         bitrate: c.bitrate.unwrap_or(DEFAULT_BITRATE),
         user_limit: c.user_limit.unwrap_or(0),
+        region: c.rtc_region.clone().filter(|r| !r.is_empty()),
+        video_quality: c.video_quality_mode.unwrap_or(1),
         flags,
         overwrites,
         forum: LiveForum {
@@ -109,6 +114,7 @@ fn channel(c: &WireChannel) -> LiveChannel {
             auto_archive: c
                 .default_auto_archive_duration
                 .unwrap_or(DEFAULT_AUTO_ARCHIVE),
+            post_slowmode: c.default_thread_rate_limit_per_user.unwrap_or(0),
         },
     }
 }

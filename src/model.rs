@@ -34,6 +34,9 @@ pub enum ChannelKind {
     Announcement,
     Forum,
     Voice,
+    Stage,
+    /// A forum for images and videos.
+    Media,
 }
 
 impl ChannelKind {
@@ -43,7 +46,9 @@ impl ChannelKind {
             2 => Self::Voice,
             4 => Self::Category,
             5 => Self::Announcement,
+            13 => Self::Stage,
             15 => Self::Forum,
+            16 => Self::Media,
             _ => return None,
         })
     }
@@ -54,7 +59,9 @@ impl ChannelKind {
             Self::Voice => 2,
             Self::Category => 4,
             Self::Announcement => 5,
+            Self::Stage => 13,
             Self::Forum => 15,
+            Self::Media => 16,
         }
     }
 
@@ -65,20 +72,36 @@ impl ChannelKind {
             Self::Announcement => "announcement",
             Self::Forum => "forum",
             Self::Voice => "voice",
+            Self::Stage => "stage",
+            Self::Media => "media",
         }
     }
 
     /// Text, announcement and forum names are lower-cased by Discord.
     pub fn has_slug_name(self) -> bool {
-        matches!(self, Self::Text | Self::Announcement | Self::Forum)
+        matches!(
+            self,
+            Self::Text | Self::Announcement | Self::Forum | Self::Media
+        )
+    }
+
+    /// Forum and media channels: posts, tags, guidelines.
+    pub fn is_forum_like(self) -> bool {
+        matches!(self, Self::Forum | Self::Media)
+    }
+
+    /// Voice and stage channels: bitrate, user limit, region; always listed
+    /// below text-like channels.
+    pub fn is_voice_like(self) -> bool {
+        matches!(self, Self::Voice | Self::Stage)
     }
 
     pub fn perm_context(self) -> PermContext {
         match self {
             Self::Category => PermContext::Category,
             Self::Text | Self::Announcement => PermContext::Text,
-            Self::Forum => PermContext::Forum,
-            Self::Voice => PermContext::Voice,
+            Self::Forum | Self::Media => PermContext::Forum,
+            Self::Voice | Self::Stage => PermContext::Voice,
         }
     }
 
@@ -119,14 +142,12 @@ impl LiveKind {
     /// Voice-like channels (voice = 2, stage = 13) always sort below
     /// text-like channels in the Discord client.
     pub fn is_voice_like(self) -> bool {
-        matches!(self, Self::Known(ChannelKind::Voice) | Self::Other(13))
+        self.known().is_some_and(ChannelKind::is_voice_like)
     }
 
     pub fn describe(self) -> String {
         match self {
             Self::Known(k) => k.as_str().to_owned(),
-            Self::Other(13) => "stage".to_owned(),
-            Self::Other(16) => "media".to_owned(),
             Self::Other(t) => format!("type {t}"),
         }
     }
@@ -258,6 +279,8 @@ pub struct Desired {
     /// Spec order: uncategorised channels, then each category followed by its
     /// channels.
     pub channels: Vec<DesiredChannel>,
+    /// Server settings, onboarding, AutoMod, expressions...
+    pub community: crate::community::Desired,
 }
 
 impl Desired {
@@ -276,6 +299,8 @@ pub struct DesiredRole {
     pub hoist: Option<bool>,
     pub mentionable: Option<bool>,
     pub permissions: Option<Perms>,
+    /// Unicode role icon; `Some(None)` removes it.
+    pub icon: Option<Option<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -291,6 +316,9 @@ pub struct DesiredChannel {
     pub slowmode: Option<u32>,
     pub bitrate: Option<u32>,
     pub user_limit: Option<u32>,
+    /// Voice region; `Some(None)` is automatic.
+    pub region: Option<Option<String>>,
+    pub video_quality: Option<u8>,
     pub forum: DesiredForum,
     pub overwrites: DesiredOverwrites,
 }
@@ -303,6 +331,8 @@ pub struct DesiredForum {
     pub sort: Option<Sort>,
     pub default_reaction: Option<Option<Emoji>>,
     pub auto_archive: Option<u32>,
+    /// Slowmode inside each post, in seconds.
+    pub post_slowmode: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -363,6 +393,7 @@ pub struct LiveState {
     pub roles: Vec<LiveRole>,
     pub channels: Vec<LiveChannel>,
     pub bot: Option<BotInfo>,
+    pub community: crate::community::Live,
 }
 
 impl LiveState {
@@ -393,6 +424,8 @@ pub struct LiveGuild {
     pub id: Snowflake,
     pub name: String,
     pub owner_id: Option<Snowflake>,
+    /// Discord feature flags, e.g. `COMMUNITY`, `ROLE_ICONS`.
+    pub features: Vec<String>,
     /// Channels Discord won't let us delete (rules, community updates, ...).
     pub protected_channels: Vec<(Snowflake, &'static str)>,
 }
@@ -411,6 +444,8 @@ pub struct LiveRole {
     pub position: i64,
     /// Owned by an integration (bot role, booster role); can't be edited.
     pub managed: bool,
+    /// Unicode role icon.
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -425,6 +460,8 @@ pub struct LiveChannel {
     pub slowmode: u32,
     pub bitrate: u32,
     pub user_limit: u32,
+    pub region: Option<String>,
+    pub video_quality: u8,
     pub flags: u64,
     pub overwrites: Vec<Overwrite>,
     pub forum: LiveForum,
@@ -460,6 +497,7 @@ pub struct LiveForum {
     pub sort: Sort,
     pub default_reaction: Option<Emoji>,
     pub auto_archive: u32,
+    pub post_slowmode: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

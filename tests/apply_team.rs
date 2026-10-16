@@ -187,6 +187,7 @@ fn requiring_tags_waits_until_the_forum_has_some() {
             ..Default::default()
         }],
         bot: None,
+        community: None,
     };
     let parsed = spec::parse(
         "guild_id: \"1\"\nchannels:\n  - { key: wiki, type: forum, name: wiki, require_tag: true, tags: [Guide] }\n",

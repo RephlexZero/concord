@@ -207,12 +207,14 @@ name = "concord"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
  "clap",
  "dotenvy",
  "http",
  "indexmap",
  "owo-colors",
  "pretty_assertions",
+ "ring",
  "rustls",
  "serde",
  "serde-saphyr",

@@ -6,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use indexmap::IndexMap;
 
+use super::community::{OptionSpec, TemplateOptionSpec};
 use super::raw::{
     CategorySpec, ChannelSpec, OverrideSpec, RoleSpec, SpecFile, TagEntry, TagSpec, VarValue,
 };
@@ -35,12 +36,19 @@ pub mod limits {
 }
 
 /// Expand and validate a spec. Returns the desired model even if there are
-/// errors, so callers can report every problem at once.
+/// errors, so callers can report every problem at once. Files (emoji,
+/// stickers, sounds) are read relative to the current directory.
 pub fn expand(spec: &SpecFile) -> (Desired, Vec<Diagnostic>) {
+    expand_at(spec, std::path::Path::new("."))
+}
+
+/// [`expand`], reading files relative to `base` (the spec's directory).
+pub fn expand_at(spec: &SpecFile, base: &std::path::Path) -> (Desired, Vec<Diagnostic>) {
     let mut cx = Cx {
         mode: spec.concord.mode,
         tag_sets: &spec.tag_sets,
         diags: Vec::new(),
+        template_options: Vec::new(),
     };
 
     let roles = cx.roles(&spec.roles);
@@ -58,19 +66,38 @@ pub fn expand(spec: &SpecFile) -> (Desired, Vec<Diagnostic>) {
     }
     cx.check_channels(&channels);
 
+    let community = crate::community::expand::expand(
+        spec,
+        &roles,
+        &channels,
+        std::mem::take(&mut cx.template_options),
+        base,
+        &mut cx.diags,
+    );
     let desired = Desired {
         guild_id: spec.guild_id.map(|g| g.0),
         mode: spec.concord.mode,
         roles,
         channels,
+        community,
     };
     (desired, cx.diags)
+}
+
+/// An onboarding option contributed by a category or template, with its
+/// variables substituted.
+#[derive(Debug, Clone)]
+pub struct TemplateOption {
+    pub prompt: String,
+    pub path: String,
+    pub option: OptionSpec,
 }
 
 struct Cx<'a> {
     mode: Mode,
     tag_sets: &'a IndexMap<String, Vec<TagEntry>>,
     diags: Vec<Diagnostic>,
+    template_options: Vec<TemplateOption>,
 }
 
 /// Where a channel definition comes from, and which variables it can use.
@@ -157,7 +184,11 @@ impl Cx<'_> {
             }
             let everyone = r.name == EVERYONE;
             if everyone {
-                if r.color.is_some() || r.hoist.is_some() || r.mentionable.is_some() {
+                if r.color.is_some()
+                    || r.hoist.is_some()
+                    || r.mentionable.is_some()
+                    || r.icon.is_some()
+                {
                     self.err(&path, "@everyone can only have `permissions`");
                 }
                 if i + 1 != specs.len() {
@@ -177,6 +208,19 @@ impl Cx<'_> {
                 }
                 p
             });
+            let icon = r.icon.as_ref().map(|i| {
+                let i = i.trim();
+                if i.is_empty() {
+                    return None;
+                }
+                if let Err(e) = Emoji::parse(i).and_then(|e| match e {
+                    Emoji::Unicode(_) => Ok(()),
+                    Emoji::Custom(_) => Err("role icons must be unicode emoji".to_owned()),
+                }) {
+                    self.err(format!("{path}.icon"), e);
+                }
+                Some(i.to_owned())
+            });
             let auth = self.mode == Mode::Authoritative && !everyone;
             out.push(DesiredRole {
                 key: r.key.clone(),
@@ -189,6 +233,7 @@ impl Cx<'_> {
                 // @everyone's permissions are never defaulted: resetting them
                 // would hide the whole server.
                 permissions: permissions.or(auth.then_some(Perms::NONE)),
+                icon: icon.or(auth.then_some(None)),
             });
         }
         if out.len() > limits::ROLES {
@@ -326,9 +371,31 @@ impl Cx<'_> {
             slowmode: None,
             bitrate: None,
             user_limit: None,
+            region: None,
+            video_quality: None,
             forum: DesiredForum::default(),
             overwrites,
         });
+
+        // An onboarding option for this category: its own, or the template's.
+        let option = match (&cat.onboarding_option, template) {
+            (Some(o), _) => Some((o, scope.at("onboarding_option"))),
+            (None, Some((tname, tpl))) => tpl.onboarding_option.as_ref().map(|o| {
+                (
+                    o,
+                    format!("templates.{tname}.onboarding_option (via {path})"),
+                )
+            }),
+            _ => None,
+        };
+        if let Some((o, opath)) = option {
+            let o = self.subst_option(o, &scope);
+            self.template_options.push(TemplateOption {
+                prompt: o.prompt,
+                path: opath,
+                option: o.option,
+            });
+        }
 
         if let Some((tname, tpl)) = template {
             for (i, c) in tpl.channels.iter().enumerate() {
@@ -417,37 +484,50 @@ impl Cx<'_> {
                 );
             }
         };
-        use ChannelKind::{Announcement, Forum, Text, Voice};
+        use ChannelKind::{Announcement, Forum, Media, Stage, Text, Voice};
         only(
             self,
             c.topic.is_some(),
             "topic",
-            &[Text, Announcement, Forum],
+            &[Text, Announcement, Forum, Media],
         );
-        only(self, c.guidelines.is_some(), "guidelines", &[Forum]);
+        only(self, c.guidelines.is_some(), "guidelines", &[Forum, Media]);
         only(
             self,
             c.slowmode.is_some(),
             "slowmode",
-            &[Text, Forum, Voice],
+            &[Text, Forum, Media, Voice, Stage],
         );
-        only(self, c.bitrate.is_some(), "bitrate", &[Voice]);
-        only(self, c.user_limit.is_some(), "user_limit", &[Voice]);
-        only(self, c.tags.is_some(), "tags", &[Forum]);
-        only(self, c.require_tag.is_some(), "require_tag", &[Forum]);
+        only(self, c.bitrate.is_some(), "bitrate", &[Voice, Stage]);
+        only(self, c.user_limit.is_some(), "user_limit", &[Voice, Stage]);
+        only(self, c.region.is_some(), "region", &[Voice, Stage]);
+        only(self, c.video_quality.is_some(), "video_quality", &[Voice]);
+        only(self, c.tags.is_some(), "tags", &[Forum, Media]);
+        only(
+            self,
+            c.require_tag.is_some(),
+            "require_tag",
+            &[Forum, Media],
+        );
         only(self, c.layout.is_some(), "layout", &[Forum]);
-        only(self, c.sort.is_some(), "sort", &[Forum]);
+        only(self, c.sort.is_some(), "sort", &[Forum, Media]);
         only(
             self,
             c.default_reaction.is_some(),
             "default_reaction",
-            &[Forum],
+            &[Forum, Media],
         );
         only(
             self,
             c.auto_archive.is_some(),
             "auto_archive",
-            &[Text, Announcement, Forum],
+            &[Text, Announcement, Forum, Media],
+        );
+        only(
+            self,
+            c.post_slowmode.is_some(),
+            "post_slowmode",
+            &[Forum, Media],
         );
         if scope.parent.is_none() && c.sync.is_some() {
             self.diags.push(Diagnostic::warning(
@@ -472,7 +552,7 @@ impl Cx<'_> {
         // this every plan would try to set them again.
         let topic = topic.map(|t| self.subst(t, scope, topic_field).trim().to_owned());
         if let Some(t) = &topic {
-            let max = if kind == Forum {
+            let max = if kind.is_forum_like() {
                 limits::GUIDELINES
             } else {
                 limits::TOPIC
@@ -485,9 +565,9 @@ impl Cx<'_> {
             }
         }
 
-        if let Some(s) = c.slowmode {
-            if s.0 > limits::SLOWMODE {
-                self.err(scope.at("slowmode"), "slowmode can be at most 6h");
+        for (field, s) in [("slowmode", c.slowmode), ("post_slowmode", c.post_slowmode)] {
+            if s.is_some_and(|s| s.0 > limits::SLOWMODE) {
+                self.err(scope.at(field), format!("{field} can be at most 6h"));
             }
         }
         if let Some(b) = c.bitrate {
@@ -542,10 +622,15 @@ impl Cx<'_> {
 
         let auth = self.mode == Mode::Authoritative;
         let def = |v: bool| auth && v;
-        let has_topic = matches!(kind, Text | Announcement | Forum);
-        let has_slowmode = matches!(kind, Text | Forum | Voice);
-        let forum = kind == Forum;
+        let has_topic = matches!(kind, Text | Announcement | Forum | Media);
+        let has_slowmode = matches!(kind, Text | Forum | Media | Voice | Stage);
+        let forum = kind.is_forum_like();
+        let voice = kind.is_voice_like();
         let has_archive = has_topic;
+        let region = c.region.as_ref().map(|r| {
+            let r = r.trim();
+            (!r.is_empty()).then(|| r.to_owned())
+        });
         Some(DesiredChannel {
             key,
             path: scope.here(),
@@ -555,21 +640,48 @@ impl Cx<'_> {
             topic: topic.or_else(|| def(has_topic).then(String::new)),
             nsfw: c.nsfw.or(def(true).then_some(false)),
             slowmode: c.slowmode.map(|s| s.0).or(def(has_slowmode).then_some(0)),
-            bitrate: c.bitrate.or(def(kind == Voice).then_some(DEFAULT_BITRATE)),
-            user_limit: c.user_limit.or(def(kind == Voice).then_some(0)),
+            bitrate: c.bitrate.or(def(voice).then_some(DEFAULT_BITRATE)),
+            user_limit: c.user_limit.or(def(voice).then_some(0)),
+            region: region.or(def(voice).then_some(None)),
+            video_quality: c
+                .video_quality
+                .map(|v| v.wire())
+                .or(def(kind == Voice).then_some(1)),
             forum: DesiredForum {
                 tags: tags.or_else(|| def(forum).then(Vec::new)),
                 require_tag: c.require_tag.or(def(forum).then_some(false)),
-                layout: c.layout.or(def(forum).then_some(Layout::List)),
+                layout: c.layout.or(def(kind == Forum).then_some(Layout::List)),
                 sort: c.sort.or(def(forum).then_some(Sort::Activity)),
                 default_reaction: default_reaction.or(def(forum).then_some(None)),
                 auto_archive: c
                     .auto_archive
                     .map(|a| a.0)
                     .or(def(has_archive).then_some(DEFAULT_AUTO_ARCHIVE)),
+                post_slowmode: c.post_slowmode.map(|s| s.0).or(def(forum).then_some(0)),
             },
             overwrites,
         })
+    }
+
+    fn subst_option(&mut self, o: &TemplateOptionSpec, scope: &Scope<'_>) -> TemplateOptionSpec {
+        let s =
+            |cx: &mut Self, v: &str, f: &str| cx.subst(v, scope, &format!("onboarding_option.{f}"));
+        let opt = &o.option;
+        TemplateOptionSpec {
+            prompt: s(self, &o.prompt, "prompt"),
+            option: OptionSpec {
+                key: opt.key.as_ref().map(|k| s(self, k, "key")),
+                title: s(self, &opt.title, "title"),
+                description: opt.description.as_ref().map(|d| s(self, d, "description")),
+                emoji: opt.emoji.as_ref().map(|e| s(self, e, "emoji")),
+                roles: opt.roles.iter().map(|r| s(self, r, "roles")).collect(),
+                channels: opt
+                    .channels
+                    .iter()
+                    .map(|c| s(self, c, "channels"))
+                    .collect(),
+            },
+        }
     }
 
     fn check_name_len(&mut self, name: &str, path: &str) {
@@ -896,7 +1008,7 @@ impl Cx<'_> {
             }
             let mut seen_voice = None;
             for c in members {
-                if c.kind == ChannelKind::Voice {
+                if c.kind.is_voice_like() {
                     seen_voice.get_or_insert(&c.name);
                 } else if let Some(v) = seen_voice {
                     self.diags.push(

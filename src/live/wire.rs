@@ -24,6 +24,24 @@ pub struct WireGuild {
     pub afk_channel_id: Option<Sf>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_level: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_message_notifications: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub explicit_content_filter: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mfa_level: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preferred_locale: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub premium_progress_bar_enabled: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub afk_timeout: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system_channel_flags: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -44,6 +62,8 @@ pub struct WireRole {
     pub managed: bool,
     #[serde(default)]
     pub mentionable: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unicode_emoji: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -91,6 +111,12 @@ pub struct WireChannel {
     pub default_forum_layout: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_auto_archive_duration: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rtc_region: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub video_quality_mode: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_thread_rate_limit_per_user: Option<u32>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -154,4 +180,8 @@ pub struct Snapshot {
     pub channels: Vec<WireChannel>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bot: Option<WireBot>,
+    /// Onboarding, AutoMod, expressions... `None` in snapshots that don't
+    /// include them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub community: Option<crate::community::wire::WireCommunity>,
 }

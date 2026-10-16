@@ -89,12 +89,14 @@ pub fn render_plan(plan: &Plan, style: Style) -> String {
         )
     };
     let is_delete = |o: &&Op| matches!(o, Op::Delete { .. });
+    let is_community = |o: &&Op| matches!(o, Op::Community(_));
     let role_ops: Vec<&Op> = plan.ops.iter().filter(is_role).collect();
     let deletes: Vec<&Op> = plan.ops.iter().filter(is_delete).collect();
+    let community_ops: Vec<&Op> = plan.ops.iter().filter(is_community).collect();
     let channel_ops: Vec<&Op> = plan
         .ops
         .iter()
-        .filter(|o| !is_role(o) && !is_delete(o))
+        .filter(|o| !is_role(o) && !is_delete(o) && !is_community(o))
         .collect();
 
     // Channels whose overwrites only change because their category's did.
@@ -130,6 +132,13 @@ pub fn render_plan(plan: &Plan, style: Style) -> String {
         }
         out.push('\n');
     }
+    if !community_ops.is_empty() {
+        let _ = writeln!(out, "{}", s.paint("Server", Tone::Bold));
+        for op in &community_ops {
+            op_lines(&mut out, op, s, &synced);
+        }
+        out.push('\n');
+    }
     if !deletes.is_empty() {
         let _ = writeln!(out, "{}", s.paint("Deletions (--prune)", Tone::Bold));
         for op in &deletes {
@@ -158,6 +167,10 @@ pub fn render_plan(plan: &Plan, style: Style) -> String {
                     None => format!("{kind:<9} #{}", u.name),
                 },
                 UnmanagedKind::Tag { forum } => format!("tag       {} in #{forum}", u.name),
+                UnmanagedKind::Automod => format!("automod   {}", u.name),
+                UnmanagedKind::Emoji => format!("emoji     :{}:", u.name),
+                UnmanagedKind::Sticker => format!("sticker   {}", u.name),
+                UnmanagedKind::Sound => format!("sound     {}", u.name),
             };
             let note = u
                 .note
@@ -185,19 +198,26 @@ pub fn render_plan(plan: &Plan, style: Style) -> String {
 
 fn summary(plan: &Plan, s: Style) -> String {
     let count = |f: fn(&Op) -> bool| plan.ops.iter().filter(|o| f(o)).count();
-    let create = count(|o| matches!(o, Op::CreateRole(_) | Op::CreateChannel(_)));
-    let update = count(|o| {
-        matches!(
-            o,
-            Op::UpdateRole(_)
-                | Op::UpdateChannel(_)
-                | Op::SetForumTags(_)
-                | Op::SetPermissionOverwrites(_)
-        )
+    let create = count(|o| match o {
+        Op::CreateRole(_) | Op::CreateChannel(_) => true,
+        Op::Community(c) => c.is_create(),
+        _ => false,
+    });
+    let update = count(|o| match o {
+        Op::UpdateRole(_)
+        | Op::UpdateChannel(_)
+        | Op::SetForumTags(_)
+        | Op::SetPermissionOverwrites(_) => true,
+        Op::Community(c) => !c.is_create() && !c.is_delete(),
+        _ => false,
     });
     let reorder = count(|o| matches!(o, Op::ReorderChannels(_) | Op::ReorderRoles(_)));
     let adopt = count(|o| matches!(o, Op::Adopt { .. }));
-    let delete = count(|o| matches!(o, Op::Delete { .. }));
+    let delete = count(|o| match o {
+        Op::Delete { .. } => true,
+        Op::Community(c) => c.is_delete(),
+        _ => false,
+    });
     let unmanaged = plan.unmanaged.iter().filter(|u| !u.pruned).count();
     let errors = plan.diagnostics.iter().filter(|d| d.is_error()).count();
 
@@ -321,9 +341,15 @@ fn op_lines(out: &mut String, op: &Op, s: &Style, synced: &[&crate::diff::SetOve
                     RoleField::Permissions(c) => {
                         perm_delta(out, s, "permissions", c, PermContext::Role)
                     }
+                    RoleField::Icon(c) => {
+                        let show =
+                            |i: &Option<String>| i.clone().unwrap_or_else(|| "none".to_owned());
+                        field(out, s, "icon", &show(&c.before), &show(&c.after))
+                    }
                 }
             }
         }
+        Op::Community(c) => community_op(out, s, c),
         Op::ReorderRoles(r) => {
             let _ = writeln!(
                 out,
@@ -590,6 +616,136 @@ fn channel_field(out: &mut String, s: &Style, f: &ChannelField) {
             &ArchiveDuration::label(c.before),
             &ArchiveDuration::label(c.after),
         ),
+        ChannelField::Region(c) => {
+            let show = |r: &Option<String>| r.clone().unwrap_or_else(|| "automatic".to_owned());
+            field(out, s, "region", &show(&c.before), &show(&c.after))
+        }
+        ChannelField::VideoQuality(c) => {
+            let show = |v: u8| if v == 2 { "full" } else { "auto" };
+            field(out, s, "video_quality", show(c.before), show(c.after))
+        }
+        ChannelField::PostSlowmode(c) => field(
+            out,
+            s,
+            "post_slowmode",
+            &duration(c.before),
+            &duration(c.after),
+        ),
+    }
+}
+
+/// A duration in seconds, the way specs write it: `30s`, `5m`, `2h`, `1d`.
+pub fn duration(secs: u32) -> String {
+    match secs {
+        0 => "off".to_owned(),
+        s if s % 86_400 == 0 => format!("{}d", s / 86_400),
+        s if s % 3600 == 0 => format!("{}h", s / 3600),
+        s if s % 60 == 0 => format!("{}m", s / 60),
+        s => format!("{s}s"),
+    }
+}
+
+fn community_lines(out: &mut String, s: &Style, lines: &[crate::community::diff::Line]) {
+    use crate::community::diff::LineTone;
+    for l in lines {
+        let (sig, tone) = match l.tone {
+            LineTone::Add => ("+", Tone::Add),
+            LineTone::Change => ("~", Tone::Change),
+            LineTone::Remove => ("-", Tone::Remove),
+            LineTone::Note => (" ", Tone::Dim),
+        };
+        let _ = writeln!(out, "      {} {}", s.paint(sig, tone), l.text);
+    }
+}
+
+fn community_op(out: &mut String, s: &Style, op: &crate::community::diff::CommunityOp) {
+    use crate::community::diff::CommunityOp as C;
+    let head = |out: &mut String, tone: Tone, verb: &str, what: &str| {
+        let _ = writeln!(out, "  {} {verb:<8} {what}", sigil(s, tone));
+    };
+    match op {
+        C::Settings(changes) => {
+            head(out, Tone::Change, "update", "server settings");
+            for c in changes {
+                field(out, s, c.field, &c.before, &c.after);
+            }
+        }
+        C::Widget { lines, .. } => {
+            head(out, Tone::Change, "update", "server widget");
+            community_lines(out, s, lines);
+        }
+        C::Onboarding { lines, .. } => {
+            head(out, Tone::Change, "update", "onboarding");
+            community_lines(out, s, lines);
+        }
+        C::WelcomeScreen { lines, .. } => {
+            head(out, Tone::Change, "update", "welcome screen");
+            community_lines(out, s, lines);
+        }
+        C::Guide { lines, .. } => {
+            head(out, Tone::Change, "update", "Server Guide");
+            community_lines(out, s, lines);
+        }
+        C::JoinQuestions { lines, .. } => {
+            head(out, Tone::Change, "update", "join questions");
+            community_lines(out, s, lines);
+        }
+        C::CreateAutomod { lines, .. } => {
+            head(out, Tone::Add, "create", "AutoMod rule");
+            community_lines(out, s, lines);
+        }
+        C::UpdateAutomod { rule, lines, .. } => {
+            head(
+                out,
+                Tone::Change,
+                "update",
+                &format!("AutoMod rule \"{}\"", rule.name),
+            );
+            community_lines(out, s, lines);
+        }
+        C::DeleteAutomod { name, .. } => head(
+            out,
+            Tone::Remove,
+            "delete",
+            &format!("AutoMod rule \"{name}\""),
+        ),
+        C::CreateEmoji { name, asset, .. } => head(
+            out,
+            Tone::Add,
+            "create",
+            &format!("emoji :{name}:  ({})", asset.file),
+        ),
+        C::UpdateEmoji { name, lines, .. } => {
+            head(out, Tone::Change, "update", &format!("emoji :{name}:"));
+            community_lines(out, s, lines);
+        }
+        C::DeleteEmoji { name, .. } => {
+            head(out, Tone::Remove, "delete", &format!("emoji :{name}:"))
+        }
+        C::CreateSticker { name, asset, .. } => head(
+            out,
+            Tone::Add,
+            "create",
+            &format!("sticker {name}  ({})", asset.file),
+        ),
+        C::UpdateSticker { name, lines, .. } => {
+            head(out, Tone::Change, "update", &format!("sticker {name}"));
+            community_lines(out, s, lines);
+        }
+        C::DeleteSticker { name, .. } => {
+            head(out, Tone::Remove, "delete", &format!("sticker {name}"))
+        }
+        C::CreateSound { name, asset, .. } => head(
+            out,
+            Tone::Add,
+            "create",
+            &format!("sound {name}  ({})", asset.file),
+        ),
+        C::UpdateSound { name, lines, .. } => {
+            head(out, Tone::Change, "update", &format!("sound {name}"));
+            community_lines(out, s, lines);
+        }
+        C::DeleteSound { name, .. } => head(out, Tone::Remove, "delete", &format!("sound {name}")),
     }
 }
 

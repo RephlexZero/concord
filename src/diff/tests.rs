@@ -21,6 +21,7 @@ fn role(id: u64, name: &str, position: i64) -> LiveRole {
         permissions: Perms::NONE,
         position,
         managed: false,
+        icon: None,
     }
 }
 
@@ -36,6 +37,8 @@ fn chan(id: u64, kind: ChannelKind, name: &str, parent: Option<u64>, position: i
         slowmode: 0,
         bitrate: DEFAULT_BITRATE,
         user_limit: 0,
+        region: None,
+        video_quality: 1,
         flags: 0,
         overwrites: vec![],
         forum: LiveForum {
@@ -73,6 +76,7 @@ fn server() -> LiveState {
             id: GUILD,
             name: "Test".into(),
             owner_id: None,
+            features: vec![],
             protected_channels: vec![],
         },
         roles: vec![role(GUILD, "@everyone", 0), bot, role(LEAD, "Lead", 2)],
@@ -81,6 +85,7 @@ fn server() -> LiveState {
             user_id: 99,
             role_ids: vec![BOT_ROLE],
         }),
+        community: Default::default(),
     }
 }
 

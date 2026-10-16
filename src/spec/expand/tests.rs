@@ -263,7 +263,7 @@ channels:
 fn fields_for_the_wrong_channel_type_are_rejected() {
     let yaml = "channels:\n  - { key: v, type: voice, name: Voice, tags: [A] }\n";
     let (_, diags) = expand_str(yaml);
-    assert!(errors(&diags)[0].contains("`tags` only applies to forum channels"));
+    assert!(errors(&diags)[0].contains("`tags` only applies to forum/media channels"));
 }
 
 #[test]
