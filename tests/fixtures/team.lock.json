@@ -172,5 +172,11 @@
     "vd.forum/Sim": "1000000000004236041",
     "vd.forum/Testing": "1000000000004235888",
     "vd.forum/Tyres": "1000000000004236024"
+  },
+  "onboarding": {
+    "subteams": "1000000000004236102"
+  },
+  "automod": {
+    "mention-spam": "1000000000004236201"
   }
 }

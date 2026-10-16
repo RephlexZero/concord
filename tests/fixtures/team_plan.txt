@@ -69,13 +69,67 @@ Channels
       before: interfaces, engineering-main
       after:  engineering-main, interfaces, design-reviews
 
+Server
+  ~ update   server settings
+      verification_level low → medium
+      default_notifications all → mentions
+      content_filter no_roles → everyone
+      locale       en-US → en-GB
+      afk_timeout  5m → 15m
+      system_messages join, join_replies, boosts, role_subscriptions, role_subscription_replies → join, boosts, role_subscriptions, role_subscription_replies
+      system_channel none → #general
+      afk_channel  none → 🔊General
+  ~ update   server widget
+      ~ enabled              false → true
+      ~ channel              none → #introductions
+  ~ update   AutoMod rule "Too many mentions"
+      ~ name                 "Block mention spam" → "Too many mentions"
+      ~ mention_limit        10 → 8
+  ~ update   AutoMod rule "Banned words"
+      + keyword "discord.gg/*"
+      + allowed "scampi"
+  + create   AutoMod rule
+        "Suspected spam": spam → block
+  + create   AutoMod rule
+        "Profile names": member_profile, 1 keyword(s) → block interactions, alert #moderator-only
+  + create   emoji :chequered_flag:  (assets/chequered.png)
+  ~ update   sound Engine Rev
+      ~ volume               1 → 0.6
+  ~ update   onboarding
+      ~ prompt "What brings you here?"
+      ~   options reordered
+      ~ prompt "Which subteams are you in?"
+      ~   title              "Which subteam?" → "Which subteams are you in?"
+      ~   option "mech-inboard" → category mech-inboard 🔩  (was 🔩 "mech-inboard" → category mech-inboard 🔩)
+      +   option "mech-outboard" → category mech-outboard 🛞
+      ~   option "powertrain" → category powertrain ⚙️  (was ⚙ "powertrain" → category powertrain ⚙️)
+      ~   option "elec" → category elec ⚡  (was ⚡ "elec" → category elec ⚡)
+      +   option "systems" → category systems 🧩
+      +   option "controls" → category controls 🎛️
+      +   option "aero" → category aero 🌬️
+      +   option "vd" → category vehicle-dynamics 🪄
+      +   option "driverless" → category driverless 🤖
+      +   option "trackside" → category trackside 🏎️
+      ~   options reordered
+      - prompt "Favourite car?"
+  ~ update   welcome screen
+      + channel #wiki: "How we do things"
+  ~ update   Server Guide
+      ~ welcome message      "Welcome to Example Racing, [@username]!" → "Welcome to Example Racing, [@username]! Start with the to-do..."
+      + resource "Wiki" → #wiki
+  ~ update   join questions
+      + rule "Keep CAD and sponsor details inside the server"
+      + question "Why do you want to join?" (paragraph)
+
 Unmanaged (on Discord but not in the spec; left alone, --prune deletes them)
   ? tag       Old in #interfaces
-  ? role      @Alumni
+  ? role      @Alumni  (used by name in the spec, so not deleted)
   ? text      #random in general
   ? text      #old-cad-links in mech-outboard 🛞
+  ? automod   MEE6 filter
+  ? emoji     :old_logo:
 
 warning categories.trackside: lockfile says `trackside` is 1000000000005232082, but that channel no longer exists
   hint: it will be created again
 
-Plan: 9 to create, 12 to update, 2 to reorder, 1 to adopt, 4 unmanaged.
+Plan: 12 to create, 21 to update, 2 to reorder, 1 to adopt, 6 unmanaged.

@@ -169,9 +169,11 @@ pub fn guide(g: &WireGuide) -> Guide<u64> {
     Guide {
         path: String::new(),
         enabled: g.enabled,
+        // An empty message is what "no welcome message" looks like.
         welcome: g
             .welcome_message
             .as_ref()
+            .filter(|w| !w.message.is_empty() || !w.author_ids.is_empty())
             .map(|w| (w.message.clone(), ids(&w.author_ids))),
         actions: g.new_member_actions.iter().map(item).collect(),
         resources: g.resource_channels.iter().map(item).collect(),

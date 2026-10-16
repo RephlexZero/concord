@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::order::{reorder_channels, reorder_roles};
 use super::resolve::{resolve, Binding, Resolution};
@@ -649,19 +649,35 @@ impl Engine<'_> {
         let was_locked = |key: Option<String>| key.map(|k| format!("was `{k}` in the lockfile"));
 
         let bound_roles: Vec<u64> = self.res.roles.values().filter_map(Binding::id).collect();
+        // Live roles the spec uses by name without defining them: deleting
+        // one would break what refers to it.
+        let mut used_names: HashSet<&str> =
+            self.desired.community.role_names().into_iter().collect();
+        for c in &self.desired.channels {
+            if let DesiredOverwrites::Inherit(list) | DesiredOverwrites::Explicit(list) =
+                &c.overwrites
+            {
+                used_names.extend(list.iter().map(|o| o.role.as_str()));
+            }
+        }
         let mut role_deletes = Vec::new();
         for lr in &self.live.roles {
             if lr.id == self.live.guild.id || lr.managed || bound_roles.contains(&lr.id) {
                 continue;
             }
+            let used = used_names.contains(lr.name.as_str());
             self.unmanaged.push(Unmanaged {
                 kind: UnmanagedKind::Role,
                 id: lr.id,
                 name: lr.name.clone(),
-                note: was_locked(lock_key_of(&self.lock.roles, lr.id)),
-                pruned: prune,
+                note: if used {
+                    Some("used by name in the spec, so not deleted".to_owned())
+                } else {
+                    was_locked(lock_key_of(&self.lock.roles, lr.id))
+                },
+                pruned: prune && !used,
             });
-            if prune {
+            if prune && !used {
                 role_deletes.push(Op::Delete {
                     kind: EntityKind::Role,
                     id: lr.id,

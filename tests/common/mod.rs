@@ -19,3 +19,13 @@ pub fn live_fixture(name: &str) -> LiveState {
 pub fn lock_fixture(name: &str) -> Lockfile {
     Lockfile::load(&root().join("tests/fixtures").join(name)).unwrap()
 }
+
+/// `examples/racing-team.yaml`, expanded with files read from `examples/`.
+/// Panics on errors.
+pub fn team_desired() -> concord::model::Desired {
+    let dir = root().join("examples");
+    let parsed = concord::spec::load(&dir.join("racing-team.yaml")).unwrap();
+    let (desired, diags) = concord::spec::expand_at(&parsed, &dir);
+    assert!(!concord::diag::has_errors(&diags), "{diags:#?}");
+    desired
+}
