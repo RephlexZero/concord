@@ -115,6 +115,9 @@ pub const TABLE: &[(&str, u32)] = &[
     ("CREATE_EVENTS", 44),
     ("USE_EXTERNAL_SOUNDS", 45),
     ("SEND_VOICE_MESSAGES", 46),
+    // Clyde was retired in 2023; the bit is still set on older servers.
+    ("USE_CLYDE_AI", 47),
+    ("SET_VOICE_CHANNEL_STATUS", 48),
     ("SEND_POLLS", 49),
     ("USE_EXTERNAL_APPS", 50),
     ("PIN_MESSAGES", 51),

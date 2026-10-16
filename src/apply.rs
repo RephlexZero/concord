@@ -515,7 +515,7 @@ pub fn describe(op: &Op) -> String {
     match op {
         Op::Adopt { name, .. } => format!("adopt {name}"),
         Op::CreateRole(c) => format!("create role @{}", c.name),
-        Op::UpdateRole(u) => format!("update role @{}", u.name),
+        Op::UpdateRole(u) => format!("update role @{}", u.name.trim_start_matches('@')),
         Op::CreateChannel(c) => match c.kind {
             ChannelKind::Category => format!("create category {}", c.name),
             ChannelKind::Voice => format!("create voice channel {}", c.name),

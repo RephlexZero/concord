@@ -295,7 +295,9 @@ fn op_lines(out: &mut String, op: &Op, s: &Style, synced: &[&crate::diff::SetOve
             }
         }
         Op::UpdateRole(u) => {
-            let _ = writeln!(out, "  {} update   @{}", sigil(s, Tone::Change), u.name);
+            // `@everyone` already starts with an @.
+            let at = if u.name.starts_with('@') { "" } else { "@" };
+            let _ = writeln!(out, "  {} update   {at}{}", sigil(s, Tone::Change), u.name);
             for f in &u.changes {
                 match f {
                     RoleField::Name(c) => field(out, s, "name", &c.before, &c.after),

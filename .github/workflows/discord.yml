@@ -1,0 +1,165 @@
+# Keeps the TBRe Discord server in sync with tbre/server.yaml.
+#
+# - Pull request: test concord, then post the plan as a PR comment.
+# - Push to main: apply the spec to Discord, then commit the updated
+#   lockfile back (new roles, channels and tags get IDs).
+# - Daily: plan only; fails if someone changed the server by hand (drift).
+# - "Run workflow" button on main: apply, same as a push.
+#
+# Setup (once): Settings → Secrets and variables → Actions → New repository
+# secret `DISCORD_TOKEN` (the bot token). Optionally add required reviewers
+# to the `discord` environment (Settings → Environments) so each apply waits
+# for an approval.
+
+name: discord
+
+on:
+  pull_request:
+    paths:
+      - "tbre/**"
+      - "src/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/discord.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tbre/**"
+      - "src/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/discord.yml"
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+# One run at a time: applies queue up instead of racing each other.
+concurrency:
+  group: discord-tbre
+  cancel-in-progress: false
+
+env:
+  SPEC: tbre/server.yaml
+  LOCK: tbre/concord.lock.json
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test
+        if: github.event_name == 'pull_request'
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Plan
+        id: plan
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          set +e
+          ./target/release/concord plan -f "$SPEC" --no-color > plan.txt 2>&1
+          code=$?
+          set -e
+          cat plan.txt
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Discord plan for \`$SPEC\`"
+            case "$code" in
+              0) echo "No changes: the server already matches." ;;
+              2) echo "Merging to main applies these changes:" ;;
+              *) echo "**The plan failed.** Fix the errors below; nothing will be applied." ;;
+            esac
+            echo
+            echo '```text'
+            cat plan.txt
+            echo '```'
+          } > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+          # 0 = no changes, 2 = changes pending, anything else = error.
+          if [ "$code" != 0 ] && [ "$code" != 2 ]; then exit 1; fi
+
+      - name: Comment the plan on the PR
+        if: always() && github.event_name == 'pull_request' && steps.plan.outputs.code != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: concord-plan
+          path: comment.md
+
+      - name: Fail on drift
+        if: github.event_name == 'schedule' && steps.plan.outputs.code == '2'
+        run: |
+          echo "::error::TBRe no longer matches $SPEC: someone changed it in Discord. Put the change in the spec (run 'concord import' to see the live state), or re-run the apply to undo it."
+          exit 1
+
+  apply:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: discord
+    permissions:
+      contents: write
+    steps:
+      # The tip of main, not the pushed commit: a queued run must see the
+      # lockfile the previous run committed.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test
+        run: cargo test
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Apply
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          set +e
+          ./target/release/concord apply -f "$SPEC" --yes --no-color 2>&1 | tee apply.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo '### Discord apply'
+            echo '```text'
+            cat apply.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Runs even when apply stops partway: the lockfile records what was
+      # done, so the next run carries on from there.
+      - name: Commit the lockfile
+        if: always()
+        run: |
+          if git diff --quiet -- "$LOCK"; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$LOCK"
+          git commit -m "Update concord.lock.json after apply [skip ci]"
+          git push origin HEAD:main
+
+      - name: Keep the pre-apply backup
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-backup-${{ github.run_id }}
+          path: tbre/.concord/backups/
+          if-no-files-found: ignore
+          retention-days: 90

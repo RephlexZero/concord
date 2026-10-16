@@ -52,6 +52,32 @@ after every change, so if a run stops partway (network, permissions), fix the
 cause and run `apply` again; it picks up where it left off. Every change is
 tagged "concord apply" in the server's audit log.
 
+## Running from CI
+
+[`.github/workflows/discord.yml`](.github/workflows/discord.yml) makes git
+the way to change the server:
+
+| When | What happens |
+|---|---|
+| Pull request | Tests concord, then posts the plan as a PR comment. |
+| Push to `main` | Applies the spec, then commits the updated lockfile back. |
+| Daily, 07:00 UTC | Plans only; fails (and emails you) if someone changed the server by hand. |
+| "Run workflow" on `main` | Applies, same as a push. |
+
+Setup, once:
+
+1. **Settings → Secrets and variables → Actions → New repository secret:**
+   `DISCORD_TOKEN`, the bot token.
+2. Make `main` the default branch (the daily check runs from it).
+3. Optional: **Settings → Environments → `discord` → Required reviewers**,
+   so each apply waits for a click. The plan is in the run's summary.
+4. If `main` is protected, allow `github-actions[bot]` to push, or the
+   lockfile commit after an apply will be rejected.
+
+Applies never run at the same time; a queued one starts from the latest
+`main`, including the lockfile the previous run committed. Each run keeps
+its pre-apply backup as an artifact for 90 days.
+
 ## How identity works
 
 Every role, category and channel has a **key**. `concord.lock.json` maps keys
