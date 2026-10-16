@@ -4,9 +4,9 @@
 [![Release](https://img.shields.io/github/v/release/RephlexZero/concord)](https://github.com/RephlexZero/concord/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Your Discord server's roles, channels and permissions as code.** Describe
-the server in a YAML file, review changes as pull requests, and let concord
-make Discord match, Terraform-style.
+**Your Discord server's roles, channels, permissions and settings as code.**
+Describe the server in a YAML file, review changes as pull requests, and let
+concord make Discord match, Terraform-style.
 
 ```text
 $ concord plan -f server.yaml
@@ -46,11 +46,16 @@ undo. concord gives you all three:
 
 ## Features
 
-- **Roles, categories, text, announcement, forum and voice channels**: names,
-  colours, hoisting, permissions, topics, slowmode, bitrate, forum tags,
-  layouts, sort order, default reactions and more.
+- **Roles, categories, text, announcement, forum, media, voice and stage
+  channels**: names, colours, role icons, hoisting, permissions, topics,
+  slowmode, bitrate, voice regions, forum tags, layouts, sort order, default
+  reactions and more.
+- **Server-wide configuration**: server settings and the widget, onboarding,
+  the welcome screen, the Server Guide, join questions, AutoMod rules, custom
+  emoji, stickers and soundboard sounds.
 - **Templates and tag sets.** Define a category layout once (say, a chat
-  channel and a forum per team) and stamp it out with variables.
+  channel and a forum per team) and stamp it out with variables. A template
+  can also add each team to an onboarding question.
 - **Readable permissions.** `private: [Lead]` hides a channel from everyone
   else; `overrides` layer on top of the category's permissions, bit by bit.
   Forum permissions use the names the Discord client shows (`CREATE_POSTS`).
@@ -217,20 +222,24 @@ Global flags: `--guild ID` (overrides the spec), `-v` (log requests),
 
 ## How it works
 
-**Identity.** Every role, category and channel has a **key**.
-`concord.lock.json` maps keys to Discord IDs; commit it. Change `name:` to
-rename something and keep the key. With no lockfile entry, a live object with
-the same name, type and category is **adopted** rather than duplicated. After
-refactoring keys (say, moving channels into a template), move their entries
-with `concord lock mv`; the plan should still show no changes.
+**Identity.** Every role, category, channel, AutoMod rule, emoji, sticker
+and sound has a **key**. `concord.lock.json` maps keys to Discord IDs (also
+forum tags and onboarding prompts and options) and records the SHA-256 of
+every file uploaded as an emoji, sticker or sound; commit it. Change `name:`
+to rename something and keep the key. With no lockfile entry, a live object
+with the same name (and, for channels, type and category) is **adopted**
+rather than duplicated. After refactoring keys (say, moving channels into a
+template), move their entries with `concord lock mv`; the plan should still
+show no changes.
 
 **Unmanaged objects.** Anything on Discord that isn't in the spec is listed
 in the plan and left alone, unless you pass `--prune`.
 
 **Order of operations.** Roles are created first, then categories, channels,
-settings, tags, permissions and positions, so each step can refer to what the
-previous ones created. Positions are compared as the client shows them, so
-Discord's messy position numbers never cause phantom changes.
+channel settings, tags, permissions and positions, then server-wide configuration,
+then deletes, so each step can refer to what the previous ones created.
+Positions are compared as the client shows them, so Discord's messy position
+numbers never cause phantom changes.
 
 **Apply safety.** Before changing anything, `apply` saves the server to
 `.concord/backups/` next to the spec (git-ignore it). The lockfile is saved
@@ -280,25 +289,43 @@ default (no topic, no colour, no permissions, no tags...). `@everyone`'s
 permissions are only managed when written. `import` writes `authoritative`
 specs.
 
+**Role fields.**
+
+| Field | Notes |
+|---|---|
+| `key`, `name` | |
+| `color` | `"#e91e63"`; `0` for none. |
+| `hoist`, `mentionable` | |
+| `permissions` | A list of [permission names](#permission-names). |
+| `icon` | A unicode emoji shown next to members' names; `""` removes it. Needs boost level 2 (Discord's `ROLE_ICONS` feature): the plan fails without it. Image icons aren't supported. |
+
+`@everyone` can only have `permissions`, and must be the last role.
+
 **Channel fields.**
 
 | Field | Types | Notes |
 |---|---|---|
-| `key`, `type`, `name` | all | `type`: `text`, `announcement`, `forum`, `voice`. Text, announcement and forum names must be lower case without spaces. |
+| `key`, `type`, `name` | all | `type`: `text`, `announcement`, `forum`, `media`, `voice`, `stage`. Text, announcement, forum and media names must be lower case without spaces. |
 | `topic` | text, announcement | |
-| `guidelines` | forum | Post guidelines (Discord's forum topic). |
+| `guidelines` | forum, media | Post guidelines (Discord's forum topic). |
 | `nsfw` | all | |
-| `slowmode` | text, forum, voice | `30s`, `5m`, `1h`. |
-| `bitrate`, `user_limit` | voice | |
-| `auto_archive` | text, announcement, forum | `1h`, `1d`, `3d`, `1w`. |
-| `tags` | forum | Up to 20; names up to 20 characters. Entries are a tag name, a tag set name, `"{var}"` (a list variable), or `{ name, emoji, moderated, key }`. |
-| `require_tag` | forum | |
+| `slowmode` | text, forum, media, voice, stage | `30s`, `5m`, `1h`; at most `6h`. |
+| `post_slowmode` | forum, media | Slowmode inside each post; at most `6h`. |
+| `bitrate`, `user_limit` | voice, stage | |
+| `region` | voice, stage | Voice region, e.g. `rotterdam`; `""` for automatic. |
+| `video_quality` | voice | `auto` or `full`. |
+| `auto_archive` | text, announcement, forum, media | `1h`, `1d`, `3d`, `1w`. |
+| `tags` | forum, media | Up to 20; names up to 20 characters. Entries are a tag name, a tag set name, `"{var}"` (a list variable), or `{ name, emoji, moderated, key }`. |
+| `require_tag` | forum, media | |
 | `layout` | forum | `list` or `gallery`. |
-| `sort` | forum | `activity` or `created`. |
-| `default_reaction` | forum | An emoji, or `id:<custom emoji ID>`. |
+| `sort` | forum, media | `activity` or `created`. |
+| `default_reaction` | forum, media | An emoji, or `id:<custom emoji ID>`. |
 | `private` | all | `[RoleA, RoleB]`: hidden from `@everyone`, visible to these roles. |
 | `overrides` | all | `{ Role: { allow: [...], deny: [...] } }`; `@everyone` is allowed. |
 | `sync` | channels in a category | `false`: don't start from the category's permissions. |
+
+Discord always shows voice and stage channels below the others in a
+category, so list them last (`validate` warns otherwise).
 
 **Permissions.** A channel in a category starts from the category's
 permissions; `private` and then `overrides` are layered on top, bit by bit.
@@ -333,12 +360,320 @@ Plan output and `import` show forum permissions with the forum names
 (`CREATE_POSTS`, `SEND_IN_THREADS`, `MANAGE_POSTS`). Unknown future bits
 appear as `BIT_<n>` and round-trip unchanged.
 
+### Server-wide configuration
+
+Beyond roles and channels, a spec can have these top-level sections:
+`server`, `onboarding`, `welcome_screen`, `guide`, `join_questions`,
+`automod`, `emoji`, `stickers` and `sounds`.
+
+- **Left out: left alone.** A section that isn't in the spec isn't read or
+  changed, in either mode.
+- **Present: managed as a whole.** The spec is the complete onboarding,
+  welcome screen, Server Guide or set of join questions; what's on Discord
+  is replaced to match. AutoMod rules, emoji, stickers and sounds that
+  aren't in the spec are listed as unmanaged and only deleted with
+  `--prune`.
+- **Except `server`.** Each server setting left out is left alone, in either
+  mode: settings like the verification level are too important to reset by
+  omission.
+- **References.** Channels and categories are referred to by key (`rules`,
+  `vd.main`); roles by name (`Lead`), as in `private` and `overrides`. A role
+  name may be one the spec doesn't manage, as long as only one live role has
+  it. Emoji fields take a unicode emoji or `id:<custom emoji ID>`.
+- **Permissions.** The bot needs Manage Server, and Manage Expressions for
+  emoji, stickers and sounds (Administrator covers both); the plan checks.
+  If a section in the spec can't be read from Discord, the plan fails and
+  says which and why; remove the section to leave it alone.
+- **Undocumented endpoints.** The Server Guide and join questions have no
+  documented Discord API; concord uses the endpoints the Discord client
+  uses. They work today but may change without notice, so treat these two
+  sections as best-effort.
+
+`import` writes every section it can read; the welcome screen and join
+questions only if they've been set up.
+
+#### Server settings
+
+```yaml
+server:
+  name: Racing Team
+  description: Formula Student team.
+  verification_level: medium
+  default_notifications: mentions
+  content_filter: everyone
+  locale: en-GB
+  boost_progress_bar: true
+  system_channel: welcome
+  system_messages: { join: true, join_replies: false, boosts: true, setup_tips: false }
+  rules_channel: rules
+  updates_channel: mod-updates
+  safety_alerts_channel: mod-updates
+  afk_channel: afk
+  afk_timeout: 5m
+  widget: { enabled: true, channel: rules }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `name` | 2-100 characters | |
+| `description` | text | |
+| `verification_level` | `none`, `low`, `medium`, `high`, `highest` | |
+| `default_notifications` | `all`, `mentions` | For new members. |
+| `content_filter` | `off`, `no_roles`, `everyone` | Whose media is scanned for explicit content. |
+| `locale` | e.g. `en-GB` | |
+| `boost_progress_bar` | `true`, `false` | |
+| `system_channel` | text channel key, or `null` | Where Discord posts system messages. |
+| `system_messages` | `join`, `join_replies`, `boosts`, `setup_tips`, `role_subscriptions`, `role_subscription_replies` | Each `true` or `false`; ones left out are left alone. |
+| `rules_channel` | text channel key | Community servers only. Can't be unset. |
+| `updates_channel` | text channel key | Community servers only; where Discord sends moderator updates. Can't be unset. |
+| `safety_alerts_channel` | text channel key, or `null` | Community servers only. |
+| `afk_channel` | voice or stage channel key, or `null` | |
+| `afk_timeout` | `1m`, `5m`, `15m`, `30m`, `1h` | |
+| `widget.enabled` | `true`, `false` | Required when `widget` is given. |
+| `widget.channel` | channel key, or `null` | The channel the widget's invite points at. Left out: left alone. |
+
+#### Onboarding
+
+```yaml
+onboarding:
+  default_channels: [rules, announcements, general, social]   # a category counts its channels
+  prompts:
+    - key: team
+      title: Which team are you in?
+      single: true
+      required: true
+      options:
+        - { title: Committee, roles: [Committee], channels: [committee] }
+    - title: What are you into?
+      type: dropdown
+      options:
+        - { title: Socials, emoji: "🎉", description: Trips and nights out, roles: [Socials] }
+
+templates:
+  team:
+    onboarding_option:       # one option per category made from this template
+      prompt: team           # the prompt's key
+      title: "{team}"
+      roles: ["{team}"]
+      channels: ["{key}"]    # the category itself
+    channels: []
+
+categories:
+  vd:
+    name: "vehicle-dynamics 🪄"
+    template: team
+    vars: { team: Vehicle Dynamics }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `enabled` | default `true` | |
+| `mode` | `default` (default), `advanced` | Discord's onboarding mode: whether only default channels, or default channels and answers, count towards its requirements. |
+| `default_channels` | channel and category keys | Channels every member sees. Discord requires at least 7 (a category counts as its channels); concord warns below that. |
+| `prompts` | list | At most 15. |
+| `prompts[].title` | 1-100 characters | |
+| `prompts[].key` | default: from the title | `Which team are you in?` → `which-team-are-you-in`. Identifies the prompt across renames and for `onboarding_option`. |
+| `prompts[].type` | `multiple_choice` (default), `dropdown` | |
+| `prompts[].single` | default `false` | Only one answer allowed. |
+| `prompts[].required` | default `false` | |
+| `prompts[].in_onboarding` | default `true` | `false`: only shown in Channels & Roles. |
+| `prompts[].options` | list | 1-50 per prompt, counting options added by templates. |
+| `options[].title` | 1-50 characters | |
+| `options[].key` | default: from the title | Unique within the prompt. |
+| `options[].description` | up to 100 characters | |
+| `options[].emoji` | emoji | |
+| `options[].roles` | role names | Given to members who pick it. Not `@everyone`. |
+| `options[].channels` | channel and category keys | Shown to members who pick it. Each option needs at least one role or channel. |
+
+**Options from templates.** `onboarding_option` on a template adds an option
+to the prompt with that key for every category made from the template, after
+the prompt's own options, in category order. It takes the option fields above
+plus `prompt`, and the category's variables (and `{key}`) work in every
+field. A category's own `onboarding_option` replaces its template's. The spec
+needs an `onboarding:` section with that prompt.
+
+Prompts and options are matched to Discord's by lockfile, then by title.
+Before changing a title, give the prompt or option a `key` so it keeps its
+identity.
+
+#### Welcome screen
+
+```yaml
+welcome_screen:
+  description: Formula Student team.
+  channels:
+    - { channel: rules, description: Read this first, emoji: "📜" }
+    - { channel: general, description: Say hello }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `enabled` | default `true` | |
+| `description` | text | |
+| `channels` | at most 5 | Each has `channel` (key), `description` (required) and `emoji`. |
+
+#### Server Guide
+
+Best-effort: uses an undocumented endpoint.
+
+```yaml
+guide:
+  welcome:
+    message: "Welcome [@username]! Start with the to-dos below."
+    authors: ["100000000000000001"]
+  actions:
+    - { title: Read the rules, channel: rules }
+    - { title: Say hello, channel: general, type: chat, emoji: "👋" }
+    - { title: Find your team, channel: teams, description: Pick a team channel }
+  resources:
+    - { title: Handbook, channel: wiki, description: Everything else }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `enabled` | default `true` | Discord needs at least 3 to-dos to enable the guide; concord warns. |
+| `welcome.message` | up to 300 characters | `[@username]` becomes the new member. |
+| `welcome.authors` | user IDs | Shown as the message's author. |
+| `actions` | at most 5 | The to-dos: `title`, `channel` (key), `type`, `description`, `emoji`. |
+| `actions[].type` | `view` (default), `chat` | Read the channel, or send a message in it. |
+| `resources` | at most 7 | `title`, `channel` (key), `description`, `emoji`. |
+
+Images on to-dos and resources can't be set from the spec; ones uploaded in
+the client are kept as long as the item's channel and title stay the same.
+
+#### Join questions
+
+The form people fill in before they can join (member verification).
+Best-effort: uses an undocumented endpoint.
+
+```yaml
+join_questions:
+  description: Tell us who you are.
+  rules:
+    - Be kind.
+    - No spam.
+  questions:
+    - { label: "What's your name?", placeholder: Jane Smith }
+    - { type: paragraph, label: "Why do you want to join?", required: false }
+    - { type: choice, label: "Which year are you in?", choices: [First, Second, Third or later] }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `description` | text | |
+| `rules` | up to 300 characters each | Rules the applicant must agree to. |
+| `questions[].type` | `text` (default), `paragraph`, `choice` | |
+| `questions[].label` | 1-300 characters | |
+| `questions[].required` | default `true` | |
+| `questions[].description`, `placeholder` | text | |
+| `questions[].choices` | list | Required for `choice`, not allowed otherwise. |
+
+concord sends back the form version it read, as the client does, so it
+doesn't overwrite changes made since.
+
+#### AutoMod
+
+```yaml
+automod:
+  - key: slurs
+    name: Block slurs
+    trigger: keyword_preset
+    presets: [slurs, sexual_content]
+    actions: [{ block: true }, { alert: mod-log }]
+  - key: invites
+    name: No invite links
+    trigger: keyword
+    keywords: ["discord.gg/*"]
+    allow: [discord.gg/ourteam]
+    actions:
+      - block: "Invite links aren't allowed here."
+      - timeout: 10m
+    exempt_roles: [Lead]
+    exempt_channels: [promo]
+  - key: mentions
+    name: Mention spam
+    trigger: mention_spam
+    mention_limit: 10
+    raid_protection: true
+    actions: [{ block: true }]
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `key`, `name` | | Matched by lockfile, then name. |
+| `enabled` | default `true` | |
+| `trigger` | `keyword`, `spam`, `keyword_preset`, `mention_spam`, `member_profile` | Discord allows 6 `keyword` rules and 1 of each other kind. Changing a rule's trigger replaces it (delete and create). |
+| `keywords` | `keyword`, `member_profile` | Words and phrases; `*` is a wildcard. At most 1000. |
+| `regex` | `keyword`, `member_profile` | Rust-flavoured regular expressions; at most 10. `keyword` and `member_profile` rules need `keywords` or `regex`. |
+| `allow` | `keyword`, `keyword_preset`, `member_profile` | Exceptions. |
+| `presets` | `profanity`, `sexual_content`, `slurs` | Required for `keyword_preset`. |
+| `mention_limit` | 1-50 | Required for `mention_spam`. |
+| `raid_protection` | default `false` | `mention_spam` only. |
+| `actions` | list | At least one; see below. |
+| `exempt_roles` | role names | |
+| `exempt_channels` | channel keys | |
+
+Each action is exactly one of:
+
+| Action | Triggers | |
+|---|---|---|
+| `block: true` or `block: "text"` | all | Block the message; the text is shown to the sender. |
+| `alert: <channel key>` | all | Post an alert in that channel. |
+| `timeout: 10m` | `keyword`, `mention_spam`, `member_profile` | Time the member out, 1s to 4 weeks. |
+| `block_interactions: true` | `member_profile` | Stop the member interacting until they fix their profile. |
+
+#### Emoji, stickers and sounds
+
+```yaml
+emoji:
+  - { key: logo, name: team_logo, file: assets/logo.png }
+  - { key: lead, name: lead_only, file: assets/lead.gif, roles: [Lead] }
+  - { key: legacy, name: old_logo }        # no file: managed by name only
+stickers:
+  - { key: gg, name: Good Game, file: assets/gg.png, emoji: "🏁", description: Well raced }
+sounds:
+  - { key: horn, name: Air horn, file: assets/horn.mp3, volume: 0.6, emoji: "📯" }
+```
+
+| Field | Values | Notes |
+|---|---|---|
+| `emoji[].name` | 2-32 letters, digits or underscores | |
+| `emoji[].file` | PNG, GIF, JPEG or WebP, at most 256 KiB | |
+| `emoji[].roles` | role names | Only these roles can use it; empty: everyone. |
+| `stickers[].name` | 2-30 characters | |
+| `stickers[].file` | PNG, APNG, GIF or Lottie JSON, at most 512 KiB | |
+| `stickers[].emoji` | an emoji | Required: the emoji Discord suggests it for. |
+| `stickers[].description` | text | |
+| `sounds[].name` | 2-32 characters | |
+| `sounds[].file` | MP3 or OGG, at most 512 KiB | Discord also limits sounds to about 5 seconds; concord doesn't check. |
+| `sounds[].volume` | 0.0 to 1.0, default 1.0 | |
+| `sounds[].emoji` | emoji | |
+
+Every entry has a `key`, and is matched by lockfile, then name. `file` is a
+path relative to the spec.
+
+- **Without `file`**, an existing emoji, sticker or sound is managed by name
+  only: its name, roles, description, emoji and volume. If it doesn't exist,
+  the plan fails, since there's nothing to upload. `import` writes entries
+  this way, as it doesn't download files.
+- **With `file`**, concord uploads it and keeps its SHA-256 in the lockfile.
+  When the file changes, Discord can't replace the image or sound in place,
+  so the plan deletes it and uploads the new file (it gets a new ID). An
+  entry adopted by name, with no hash recorded yet, is assumed to match its
+  file.
+- Emoji managed by an integration (Twitch, for example) are ignored.
+
 ## Limitations
 
-- Not managed: members and their roles, per-member overwrites, emoji,
-  stickers, webhooks, events, onboarding, AutoMod, server settings, role
-  icons and gradient colours (only the primary colour is set).
-- Stage and media channels are listed as unmanaged.
+- Not managed: members and their roles, per-member overwrites, scheduled
+  events, webhooks, images on onboarding options and Server Guide items,
+  Discovery settings, gradient role colours (only the primary colour is set),
+  image role icons, the server's icon and banner, turning Community on or
+  off, and the moderator 2FA requirement (only the owner can change it).
+- The Server Guide and join questions use undocumented Discord endpoints and
+  may break when Discord changes them.
+- Emoji fields refer to custom emoji by ID (`id:<ID>`), not by their key in
+  `emoji:`.
 - Roles at or above the bot's own role can't be changed (a Discord rule);
   the plan explains how to fix it.
 
