@@ -186,6 +186,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dotenvy",
+ "http",
  "indexmap",
  "owo-colors",
  "pretty_assertions",

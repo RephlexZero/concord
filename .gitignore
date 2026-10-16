@@ -2,3 +2,4 @@
 .env
 snapshot*.json
 *.json.tmp
+.concord/

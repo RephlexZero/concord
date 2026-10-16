@@ -2,10 +2,7 @@
 
 Manage a Discord server's roles and channels as code, Terraform-style. A YAML
 spec in git describes the server; `concord plan` shows the difference from
-the live server, and `concord apply` (coming next) makes the server match.
-
-> **Status:** `validate`, `import`, `plan`, `snapshot` and `lock` work.
-> `apply` is next.
+the live server, and `concord apply` makes the server match.
 
 ## Quick start
 
@@ -26,6 +23,12 @@ the live server, and `concord apply` (coming next) makes the server match.
    concord plan -f server.yaml        # → "No changes."
    ```
    Commit `server.yaml` and `concord.lock.json`.
+6. **Change the spec, then apply it:**
+   ```sh
+   concord apply -f server.yaml --simulate   # dry run on an in-memory copy
+   concord apply -f server.yaml              # shows the plan, asks, applies
+   ```
+   Commit the updated `concord.lock.json` afterwards.
 
 ## Commands
 
@@ -34,12 +37,20 @@ the live server, and `concord apply` (coming next) makes the server match.
 | `concord validate [-f server.yaml]` | Check the spec offline. |
 | `concord import --guild ID [--out server.yaml]` | Write a spec and lockfile from the live server. |
 | `concord plan [-f server.yaml] [--prune]` | Show the changes. Exit code 0 = none, 2 = changes pending, 1 = error. |
+| `concord apply [-f server.yaml] [--prune] [--yes]` | Show the plan, ask, back up the server, apply, then check a second plan is empty. Exit code 0 = done, 1 = error. |
+| `concord apply --simulate [--state-file snap.json]` | Apply to an in-memory copy instead, and check it converges. Sends nothing and writes no files. |
 | `concord snapshot --guild ID [--out snapshot.json]` | Save the live state as JSON. `plan --state-file` and `import --state-file` read it. |
 | `concord lock mv OLD NEW` | Rename a key in the lockfile (after refactoring the spec). |
 | `concord lock list` | Show every key and its Discord ID. |
 
 Global flags: `--guild ID` (overrides the spec), `-v` (show requests),
 `--no-color` (also `NO_COLOR=1`).
+
+**Apply safety.** Before changing anything, `apply` saves the server to
+`.concord/backups/` next to the spec (git-ignored). It saves the lockfile
+after every change, so if a run stops partway (network, permissions), fix the
+cause and run `apply` again; it picks up where it left off. Every change is
+tagged "concord apply" in the server's audit log.
 
 ## How identity works
 

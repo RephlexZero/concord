@@ -1,5 +1,6 @@
 //! concord: manage a Discord server's structure as code.
 
+pub mod apply;
 pub mod diag;
 pub mod diff;
 pub mod import;

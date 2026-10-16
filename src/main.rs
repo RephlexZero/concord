@@ -8,8 +8,10 @@ use anyhow::{bail, Context, Result};
 use clap::Parser;
 
 use cli::{Cli, Command, LockCommand};
+use concord::apply::{self, Applier};
 use concord::diag::{has_errors, Diagnostic};
 use concord::diff::{self, PlanOptions};
+use concord::live::memory::MemoryApi;
 use concord::live::twilight::TwilightApi;
 use concord::live::{to_live, DiscordApi, Snapshot};
 use concord::lock::{Lockfile, DEFAULT_LOCK_FILE};
@@ -72,6 +74,25 @@ fn run(cli: &Cli, style: Style) -> Result<u8> {
             out,
             lock.as_deref(),
             *force,
+            state_file.as_deref(),
+        ),
+        Command::Apply {
+            file,
+            lock,
+            prune,
+            yes,
+            simulate,
+            state_file,
+        } => apply_cmd(
+            cli,
+            style,
+            file,
+            lock.as_deref(),
+            ApplyFlags {
+                prune: *prune,
+                yes: *yes,
+                simulate: *simulate,
+            },
             state_file.as_deref(),
         ),
         Command::Snapshot { out } => {
@@ -174,6 +195,174 @@ fn plan(
     })
 }
 
+#[derive(Clone, Copy)]
+struct ApplyFlags {
+    prune: bool,
+    yes: bool,
+    simulate: bool,
+}
+
+fn apply_cmd(
+    cli: &Cli,
+    style: Style,
+    file: &Path,
+    lock: Option<&Path>,
+    flags: ApplyFlags,
+    state_file: Option<&Path>,
+) -> Result<u8> {
+    let Some((desired, spec_diags)) = load_spec(file, style)? else {
+        return Ok(EXIT_ERROR);
+    };
+    let guild = cli
+        .guild
+        .or(desired.guild_id)
+        .context("no server to apply to: set guild_id in the spec or pass --guild")?;
+    let lock_file = lock_path(file, lock);
+    let lock = Lockfile::load(&lock_file)?;
+    let runtime = runtime()?;
+    let _guard = runtime.enter();
+    let verbose = cli.verbose > 0;
+    let job = ApplyJob {
+        desired: &desired,
+        spec_diags,
+        lock,
+        lock_file: &lock_file,
+        backup_dir: &file
+            .parent()
+            .unwrap_or_else(|| Path::new(""))
+            .join(".concord/backups"),
+        flags,
+        style,
+    };
+    if flags.simulate {
+        let snapshot = match state_file {
+            Some(path) => read_snapshot(path, guild)?,
+            None => runtime.block_on(TwilightApi::new(token()?, verbose).snapshot(guild))?,
+        };
+        let api = MemoryApi::new(snapshot);
+        runtime.block_on(job.run(&api, guild))
+    } else {
+        let api = TwilightApi::new(token()?, verbose);
+        runtime.block_on(job.run(&api, guild))
+    }
+}
+
+struct ApplyJob<'a> {
+    desired: &'a concord::model::Desired,
+    spec_diags: Vec<Diagnostic>,
+    lock: Lockfile,
+    lock_file: &'a Path,
+    backup_dir: &'a Path,
+    flags: ApplyFlags,
+    style: Style,
+}
+
+impl ApplyJob<'_> {
+    async fn run<A: DiscordApi>(self, api: &A, guild: u64) -> Result<u8> {
+        let ApplyFlags {
+            prune,
+            yes,
+            simulate,
+        } = self.flags;
+        let opts = PlanOptions { prune };
+        let snapshot = api.snapshot(guild).await?;
+        let mut plan = diff::plan(self.desired, &to_live(&snapshot), &self.lock, &opts);
+        let mut diags = self.spec_diags;
+        diags.append(&mut plan.diagnostics);
+        plan.diagnostics = diags;
+        print!("{}", render_plan(&plan, self.style));
+        if plan.has_errors() {
+            eprintln!("\nNothing was changed.");
+            return Ok(EXIT_ERROR);
+        }
+        if !plan.has_changes() {
+            return Ok(EXIT_OK);
+        }
+        let total = plan.ops.len();
+
+        if simulate {
+            println!("\nSimulating on an in-memory copy of {}…", plan.guild_name);
+        } else {
+            if !yes && !confirm(&plan.guild_name, total)? {
+                eprintln!("Cancelled. Nothing was changed.");
+                return Ok(EXIT_ERROR);
+            }
+            std::fs::create_dir_all(self.backup_dir)
+                .with_context(|| format!("can't create {}", self.backup_dir.display()))?;
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs());
+            let backup = self
+                .backup_dir
+                .join(format!("snapshot-{guild}-{stamp}.json"));
+            write_json(&backup, &snapshot)?;
+            println!("\nBacked up the server to {}", backup.display());
+        }
+
+        let mut applier = Applier::new(&plan);
+        let mut save_error = None;
+        let result = applier
+            .run_all(api, &plan.ops, |i, op, lock| {
+                if matches!(op, concord::diff::Op::Adopt { .. }) {
+                    return;
+                }
+                println!("  ✓ [{}/{total}] {}", i + 1, apply::describe(op));
+                if !simulate && save_error.is_none() {
+                    save_error = lock.save(self.lock_file).err();
+                }
+            })
+            .await;
+        if !simulate {
+            applier.lock().save(self.lock_file)?;
+        }
+        if let Some(e) = save_error {
+            return Err(e.into());
+        }
+        if let Err((i, e)) = result {
+            eprintln!(
+                "  ✗ [{}/{total}] {}: {e}",
+                i + 1,
+                apply::describe(&plan.ops[i])
+            );
+            eprintln!(
+                "\nStopped after {i} of {total} changes. {} records everything done so far; \
+                 fix the problem and run apply again to finish.",
+                self.lock_file.display()
+            );
+            return Ok(EXIT_ERROR);
+        }
+
+        // Check the result: a second plan should be empty.
+        let after = api.snapshot(guild).await?;
+        let again = diff::plan(self.desired, &to_live(&after), applier.lock(), &opts);
+        if again.has_changes() {
+            eprintln!(
+                "\nwarning: applied {total} changes, but the server still differs from the spec:"
+            );
+            print!("{}", render_plan(&again, self.style));
+            return Ok(EXIT_ERROR);
+        }
+        if simulate {
+            println!("\nSimulation OK: {total} changes, and a second plan shows none left. Nothing was sent to Discord.");
+        } else {
+            println!("\nDone: applied {total} changes. The server matches the spec.");
+        }
+        Ok(EXIT_OK)
+    }
+}
+
+/// Ask on the terminal. Refuses when there's no terminal to ask on.
+fn confirm(guild_name: &str, n: usize) -> Result<bool> {
+    if !std::io::stdin().is_terminal() {
+        bail!("not asking for confirmation without a terminal; pass --yes to apply anyway");
+    }
+    print!("\nApply these {n} changes to {guild_name}? Type `yes` to continue: ");
+    std::io::Write::flush(&mut std::io::stdout())?;
+    let mut answer = String::new();
+    std::io::stdin().read_line(&mut answer)?;
+    Ok(answer.trim() == "yes")
+}
+
 fn import_cmd(
     cli: &Cli,
     style: Style,
@@ -255,11 +444,15 @@ fn read_snapshot(path: &Path, guild: u64) -> Result<Snapshot> {
     Ok(snap)
 }
 
+fn runtime() -> Result<tokio::runtime::Runtime> {
+    Ok(tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?)
+}
+
 fn fetch(guild: u64, verbose: bool) -> Result<Snapshot> {
     let token = token()?;
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
+    let runtime = runtime()?;
     // twilight's rate limiter spawns a task when the client is built, so the
     // client must be created inside the runtime.
     let _guard = runtime.enter();

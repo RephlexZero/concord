@@ -2,6 +2,8 @@
 
 use std::future::Future;
 
+use serde_json::Value;
+
 use super::wire::Snapshot;
 
 #[derive(Debug, thiserror::Error)]
@@ -25,8 +27,37 @@ pub enum ApiError {
     Decode { path: String, message: String },
 }
 
+/// The endpoints `apply` writes to. IDs are channel or role IDs; the guild ID
+/// is passed separately.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Endpoint {
+    CreateRole,
+    UpdateRole(u64),
+    RolePositions,
+    DeleteRole(u64),
+    CreateChannel,
+    UpdateChannel(u64),
+    ChannelPositions,
+    DeleteChannel(u64),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WriteRequest {
+    pub endpoint: Endpoint,
+    /// JSON body; `None` for deletes.
+    pub body: Option<Value>,
+}
+
 /// Discord REST operations concord needs.
 pub trait DiscordApi {
     /// Read everything concord manages, plus who the bot is.
     fn snapshot(&self, guild_id: u64) -> impl Future<Output = Result<Snapshot, ApiError>> + Send;
+
+    /// Send one write. Returns the response body (`Null` when Discord sends
+    /// none).
+    fn write(
+        &self,
+        guild_id: u64,
+        request: &WriteRequest,
+    ) -> impl Future<Output = Result<Value, ApiError>> + Send;
 }

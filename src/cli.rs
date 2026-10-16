@@ -65,6 +65,31 @@ pub enum Command {
         state_file: Option<PathBuf>,
     },
 
+    /// Make the server match the spec. Shows the plan, asks, backs up the
+    /// server, then applies it. Exit code 0 = done, 1 = error.
+    Apply {
+        #[arg(short = 'f', long = "file", default_value = "server.yaml")]
+        file: PathBuf,
+        /// Lockfile path [default: concord.lock.json next to the spec].
+        #[arg(long)]
+        lock: Option<PathBuf>,
+        /// Include deleting things that aren't in the spec.
+        #[arg(long)]
+        prune: bool,
+        /// Don't ask for confirmation.
+        #[arg(long, short = 'y')]
+        yes: bool,
+        /// Apply to an in-memory copy of the server, then check that a second
+        /// plan shows no changes. Nothing is sent to Discord and no files are
+        /// written.
+        #[arg(long)]
+        simulate: bool,
+        /// With --simulate: start from a saved snapshot instead of the live
+        /// server.
+        #[arg(long, value_name = "JSON", requires = "simulate")]
+        state_file: Option<PathBuf>,
+    },
+
     /// Save the live server's state as JSON (for backups, or `--state-file`).
     Snapshot {
         #[arg(long, default_value = "snapshot.json")]

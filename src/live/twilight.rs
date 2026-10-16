@@ -2,13 +2,15 @@
 //! `retry_after`); requests are built from raw JSON because twilight's typed
 //! builders can't express everything we send (new forum tags have no ID).
 
+use http::header::{HeaderName, HeaderValue};
 use serde::de::DeserializeOwned;
+use serde_json::Value;
 use twilight_http::error::ErrorType;
 use twilight_http::request::Request;
 use twilight_http::routing::Route;
 use twilight_http::Client;
 
-use super::api::{ApiError, DiscordApi};
+use super::api::{ApiError, DiscordApi, Endpoint, WriteRequest};
 use super::wire::{Snapshot, WireBot, WireChannel, WireGuild, WireMember, WireRole, WireUser};
 
 pub struct TwilightApi {
@@ -42,7 +44,9 @@ impl TwilightApi {
             path: path.clone(),
             message: e.to_string(),
         })?;
-        serde_json::from_slice(&bytes).map_err(|e| ApiError::Decode {
+        // 204 No Content (positions, role deletes) has an empty body.
+        let bytes: &[u8] = if bytes.is_empty() { b"null" } else { &bytes };
+        serde_json::from_slice(bytes).map_err(|e| ApiError::Decode {
             path,
             message: e.to_string(),
         })
@@ -50,6 +54,19 @@ impl TwilightApi {
 
     async fn get<T: DeserializeOwned>(&self, route: Route<'_>) -> Result<T, ApiError> {
         self.send(Request::from_route(&route)).await
+    }
+}
+
+fn route(guild_id: u64, endpoint: Endpoint) -> Route<'static> {
+    match endpoint {
+        Endpoint::CreateRole => Route::CreateRole { guild_id },
+        Endpoint::UpdateRole(role_id) => Route::UpdateRole { guild_id, role_id },
+        Endpoint::RolePositions => Route::UpdateRolePositions { guild_id },
+        Endpoint::DeleteRole(role_id) => Route::DeleteRole { guild_id, role_id },
+        Endpoint::CreateChannel => Route::CreateChannel { guild_id },
+        Endpoint::UpdateChannel(channel_id) => Route::UpdateChannel { channel_id },
+        Endpoint::ChannelPositions => Route::UpdateGuildChannels { guild_id },
+        Endpoint::DeleteChannel(channel_id) => Route::DeleteChannel { channel_id },
     }
 }
 
@@ -108,5 +125,24 @@ impl DiscordApi for TwilightApi {
             channels,
             bot: Some(WireBot { user, member }),
         })
+    }
+
+    async fn write(&self, guild_id: u64, request: &WriteRequest) -> Result<Value, ApiError> {
+        let route = route(guild_id, request.endpoint);
+        // Shows up in the server's audit log next to every change.
+        let reason = (
+            HeaderName::from_static("x-audit-log-reason"),
+            HeaderValue::from_static("concord apply"),
+        );
+        let mut builder = Request::builder(&route).headers(std::iter::once(reason));
+        if let Some(body) = &request.body {
+            builder = builder.json(body);
+        }
+        let built = builder.build().map_err(|e| ApiError::Transport {
+            method: route.method().name(),
+            path: route.to_string(),
+            message: e.to_string(),
+        })?;
+        self.send(built).await
     }
 }

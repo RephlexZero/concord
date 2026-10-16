@@ -11,6 +11,7 @@ readme = "README.md"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 dotenvy = "0.15"
+http = "1"
 indexmap = { version = "2", features = ["serde"] }
 owo-colors = "4"
 serde = { version = "1", features = ["derive"] }
