@@ -119,7 +119,10 @@ fn load_spec(
         }
         Err(e) => return Err(e.into()),
     };
-    let (desired, diags) = spec::expand(&parsed);
+    // Files (emoji, stickers, sounds) are relative to the spec, not the
+    // current directory.
+    let base = file.parent().unwrap_or_else(|| Path::new(""));
+    let (desired, diags) = spec::expand_at(&parsed, base);
     if has_errors(&diags) {
         eprint!("{}", render_diagnostics(&diags, style));
         let n = diags.iter().filter(|d| d.is_error()).count();
